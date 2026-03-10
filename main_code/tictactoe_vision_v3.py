@@ -8,7 +8,7 @@ Estrategia:
   2. Dentro del panel enderezado, localizar el marco negro de la cuadrícula
      usando análisis de contenido (blancura interior + centralidad).
   3. Dividir ese marco en 9 celdas y clasificar cada una por color HSV.
-     - Tapa ROJA  → ficha X
+     - Tapa ROJA  → fpyicha X
      - Tapa AZUL CLARO → ficha O
 
 Uso:
@@ -137,17 +137,6 @@ def warp_panel(img, debug=False):
             break
 
     if panel_cnt is None:
-        # Fallback: si ningún contorno cumple los criterios estrictos,
-        # relajar el filtro de borde pero mantener el ratio
-        for cnt in sorted(cnts, key=cv2.contourArea, reverse=True):
-            if cv2.contourArea(cnt) < (h * w) * 0.04:
-                continue
-            bx, by, bw, bh = cv2.boundingRect(cnt)
-            if min(bw, bh) / max(bw, bh) > 0.5:
-                panel_cnt = cnt
-                break
-
-    if panel_cnt is None:
         return None, None
 
     # Obtener las 4 esquinas (convex hull → approxPolyDP)
@@ -171,11 +160,23 @@ def warp_panel(img, debug=False):
     M   = cv2.getPerspectiveTransform(src, dst)
     warped = cv2.warpPerspective(img, M, (side, side))
 
+    # VERIFICACIÓN ADICIONAL: el panel debe tener contenido negro significativo (líneas de cuadrícula)
+    gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+    _, black_mask = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)
+    black_ratio = np.sum(black_mask > 0) / (side * side)
+    
+    # Debe tener al menos 3% de píxeles negros (las líneas de la cuadrícula)
+    if black_ratio < 0.03:
+        if debug:
+            print(f"[DEBUG] Panel rechazado: ratio negro muy bajo ({black_ratio:.3f})")
+        return None, None
+
     if debug:
         dbg = img.copy()
         cv2.polylines(dbg, [src.astype(int)], True, (0, 255, 0), 3)
         cv2.imwrite("_debug_panel_corners.jpg", dbg)
         cv2.imwrite("_debug_warped_panel.jpg", warped)
+        print(f"[DEBUG] Panel aceptado: ratio negro = {black_ratio:.3f}")
 
     return warped, M
 
@@ -228,15 +229,10 @@ def find_grid_bbox(warped, debug=False):
             break             # tomamos el primero válido (mayor área)
 
     if best_box is None:
-        # Fallback: área blanca central del warped
-        warped_hsv = cv2.cvtColor(warped, cv2.COLOR_BGR2HSV)
-        wm = cv2.inRange(warped_hsv, WHITE_L, WHITE_U)
-        h_idx = np.where(np.sum(wm, axis=1) > side * 0.15)[0]
-        v_idx = np.where(np.sum(wm, axis=0) > side * 0.15)[0]
-        if len(h_idx) and len(v_idx):
-            best_box = (v_idx[0], h_idx[0], v_idx[-1] - v_idx[0], h_idx[-1] - h_idx[0])
-        else:
-            best_box = (side // 10, side // 10, int(side * 0.8), int(side * 0.8))
+        # No se encontró una cuadrícula válida
+        if debug:
+            print("[DEBUG] No se encontró cuadrícula válida en el panel")
+        return None
 
     if debug:
         dbg = warped.copy()
@@ -357,7 +353,13 @@ def analyze(image_path, debug=False, visualize=False):
     result['board_found'] = True
 
     # ── Paso 2: localizar el marco de la cuadrícula ────────────────────
-    gx, gy, gw, gh = find_grid_bbox(warped, debug=debug)
+    grid_bbox = find_grid_bbox(warped, debug=debug)
+    if grid_bbox is None:
+        print("[WARN] Panel blanco encontrado, pero sin cuadrícula válida.")
+        result['board_found'] = False
+        return result
+    
+    gx, gy, gw, gh = grid_bbox
 
     # ── Paso 3: clasificar las 9 celdas ───────────────────────────────
     board, conf = classify_cells(warped, gx, gy, gw, gh, debug=debug)
