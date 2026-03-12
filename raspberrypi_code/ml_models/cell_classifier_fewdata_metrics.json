@@ -1,0 +1,28 @@
+{
+  "dataset": "ml_data/cell_dataset_capturas.npz",
+  "samples_total": 324,
+  "samples_train": 259,
+  "samples_test": 65,
+  "samples_train_fit": 1036,
+  "accuracy": 0.6923076923076923,
+  "few_data_mode": true,
+  "augment_copies": 3,
+  "augment_noise": 0.018,
+  "confusion_matrix_0empty_1X_2O": [
+    [
+      33,
+      1,
+      4
+    ],
+    [
+      8,
+      6,
+      0
+    ],
+    [
+      7,
+      0,
+      6
+    ]
+  ]
+}

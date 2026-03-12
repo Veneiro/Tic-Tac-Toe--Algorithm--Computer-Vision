@@ -1,0 +1,126 @@
+{
+  "best": {
+    "name": "fd_c2_n0015",
+    "model_path": "ml_models/_tmp_fd_c2_n0015.joblib",
+    "eval_path": "ml_models/_tmp_eval_fd_c2_n0015.json",
+    "board_exact_accuracy": 0.6666666666666666,
+    "cell_accuracy": 0.9351851851851852,
+    "board_exact": 24,
+    "runs_evaluated": 36,
+    "args": [
+      "--few-data",
+      "--augment-copies",
+      "2",
+      "--augment-noise",
+      "0.015"
+    ]
+  },
+  "all_results": [
+    {
+      "name": "fd_c2_n0015",
+      "model_path": "ml_models/_tmp_fd_c2_n0015.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c2_n0015.json",
+      "board_exact_accuracy": 0.6666666666666666,
+      "cell_accuracy": 0.9351851851851852,
+      "board_exact": 24,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "2",
+        "--augment-noise",
+        "0.015"
+      ]
+    },
+    {
+      "name": "fd_c3_n0018",
+      "model_path": "ml_models/_tmp_fd_c3_n0018.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c3_n0018.json",
+      "board_exact_accuracy": 0.6666666666666666,
+      "cell_accuracy": 0.9320987654320988,
+      "board_exact": 24,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "3",
+        "--augment-noise",
+        "0.018"
+      ]
+    },
+    {
+      "name": "fd_c4_n0010",
+      "model_path": "ml_models/_tmp_fd_c4_n0010.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c4_n0010.json",
+      "board_exact_accuracy": 0.6666666666666666,
+      "cell_accuracy": 0.9320987654320988,
+      "board_exact": 24,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "4",
+        "--augment-noise",
+        "0.010"
+      ]
+    },
+    {
+      "name": "fd_c3_n0022",
+      "model_path": "ml_models/_tmp_fd_c3_n0022.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c3_n0022.json",
+      "board_exact_accuracy": 0.6666666666666666,
+      "cell_accuracy": 0.9320987654320988,
+      "board_exact": 24,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "3",
+        "--augment-noise",
+        "0.022"
+      ]
+    },
+    {
+      "name": "fd_c4_n0015",
+      "model_path": "ml_models/_tmp_fd_c4_n0015.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c4_n0015.json",
+      "board_exact_accuracy": 0.6388888888888888,
+      "cell_accuracy": 0.9320987654320988,
+      "board_exact": 23,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "4",
+        "--augment-noise",
+        "0.015"
+      ]
+    },
+    {
+      "name": "fd_c5_n0012",
+      "model_path": "ml_models/_tmp_fd_c5_n0012.joblib",
+      "eval_path": "ml_models/_tmp_eval_fd_c5_n0012.json",
+      "board_exact_accuracy": 0.6388888888888888,
+      "cell_accuracy": 0.9320987654320988,
+      "board_exact": 23,
+      "runs_evaluated": 36,
+      "args": [
+        "--few-data",
+        "--augment-copies",
+        "5",
+        "--augment-noise",
+        "0.012"
+      ]
+    },
+    {
+      "name": "baseline",
+      "model_path": "ml_models/_tmp_baseline.joblib",
+      "eval_path": "ml_models/_tmp_eval_baseline.json",
+      "board_exact_accuracy": 0.5277777777777778,
+      "cell_accuracy": 0.9197530864197531,
+      "board_exact": 19,
+      "runs_evaluated": 36,
+      "args": []
+    }
+  ]
+}

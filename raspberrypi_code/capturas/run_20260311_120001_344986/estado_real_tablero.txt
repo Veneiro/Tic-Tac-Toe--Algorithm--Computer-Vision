@@ -1,0 +1,6 @@
+[
+  [None, 'X', None],
+  [None, 'X', None],
+  ['O', 'O', None]
+]
+tablero={0,1,0;0,1,0;2,2,0}

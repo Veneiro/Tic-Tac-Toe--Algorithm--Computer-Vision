@@ -1,0 +1,24 @@
+{
+  "dataset": "ml_data/cell_dataset_debug_steps.npz",
+  "samples_total": 171,
+  "samples_train": 136,
+  "samples_test": 35,
+  "accuracy": 0.34285714285714286,
+  "confusion_matrix_0empty_1X_2O": [
+    [
+      5,
+      9,
+      5
+    ],
+    [
+      2,
+      5,
+      1
+    ],
+    [
+      5,
+      1,
+      2
+    ]
+  ]
+}

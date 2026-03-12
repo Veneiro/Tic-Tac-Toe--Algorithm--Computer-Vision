@@ -1,0 +1,2662 @@
+{
+  "model": "ml_models/cell_classifier_best.joblib",
+  "debug_dir": "capturas",
+  "runs_total": 36,
+  "runs_evaluated": 36,
+  "board_exact_matches": 32,
+  "board_exact_accuracy": 0.8888888888888888,
+  "cell_samples": 324,
+  "cell_accuracy": 0.9845679012345679,
+  "confusion_matrix_0empty_1X_2O": [
+    [
+      186,
+      3,
+      0
+    ],
+    [
+      0,
+      68,
+      0
+    ],
+    [
+      2,
+      0,
+      65
+    ]
+  ],
+  "skipped": {
+    "missing_or_invalid_board": 0,
+    "no_patches_or_extract_fail": 0,
+    "incomplete_cells": 0
+  },
+  "runs": [
+    {
+      "run": "run_20260311_115837_408437",
+      "board_true": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_pred": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_true_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_115842_506566",
+      "board_true": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_pred": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_true_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_115854_767704",
+      "board_true": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_pred": [
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          2
+        ]
+      ],
+      "board_true_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          null,
+          "O",
+          "X"
+        ],
+        [
+          "X",
+          null,
+          "O"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_115943_272528",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_115948_703637",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_115955_799143",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120001_344986",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120007_879572",
+      "board_true": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120013_324227",
+      "board_true": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          2
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          2
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          "O"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          "O"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120226_018192",
+      "board_true": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          2
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          2
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          "O"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          "O"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120342_793743",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_120430_400493",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          "X",
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_121514_652786",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_121609_599263",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          2,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          "X",
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          "X",
+          "O",
+          null
+        ],
+        [
+          "X",
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 1,
+      "board_exact": false
+    },
+    {
+      "run": "run_20260311_121630_059779",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          "X",
+          null,
+          null
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          "X",
+          null,
+          null
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_122855_852237",
+      "board_true": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_132252_845019",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133019_009629",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133030_849763",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133120_620293",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133149_820282",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133225_133090",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133611_538345",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133619_088667",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133628_837473",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133638_723090",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133655_187369",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133702_442382",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133709_343634",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133728_284053",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          "X"
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 1,
+      "board_exact": false
+    },
+    {
+      "run": "run_20260311_133735_499837",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133742_454440",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133749_050000",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          "X"
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 1,
+      "board_exact": false
+    },
+    {
+      "run": "run_20260311_133755_553883",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133802_430972",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 0,
+      "board_exact": true
+    },
+    {
+      "run": "run_20260311_133809_345073",
+      "board_true": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_pred": [
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "board_true_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          "O",
+          "O",
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "board_pred_labels": [
+        [
+          null,
+          "X",
+          null
+        ],
+        [
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          "X"
+        ]
+      ],
+      "diff_cells": 2,
+      "board_exact": false
+    }
+  ]
+}
