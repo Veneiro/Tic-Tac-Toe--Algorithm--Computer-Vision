@@ -9,7 +9,7 @@ app = Flask(__name__)
 # CONFIGURACIÓN DE IA
 # ==========================================
 # Cargar el modelo entrenado (deberás poner tu archivo .pt aquí cuando lo entrenes)
-model = YOLO('best.pt') 
+model = YOLO('./pt/best (3).pt') 
 
 # T_SOFTMAX Y SEARCH_DEPTH (Mantenemos tu configuración)
 T_SOFTMAX = 0.5

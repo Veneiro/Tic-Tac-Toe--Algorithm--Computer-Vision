@@ -9,10 +9,10 @@
 // ==========================================
 // CONFIGURACIÓN DE RED
 // ==========================================
-const char* ssid = "Livebox6-593F";
-const char* password = "KhCSzCV5DJ4N";
-String raspberryURL = "http://192.168.1.14:5000/procesar"; 
-String esp32s3URL = "http://192.168.1.16/tablero"; // Cambia esta IP por la del ESP32-S3
+const char* ssid = "Livebox6-3935";
+const char* password = "k7R2b2TCTfxk";
+String raspberryURL = "http://172.17.80.82:5000/procesar"; 
+String esp32s3URL = "http://10.147.251.45/tablero"; // Cambia esta IP por la del ESP32-S3
 
 // ==========================================
 // CONFIGURACIÓN DE HARDWARE ESP-EYE
