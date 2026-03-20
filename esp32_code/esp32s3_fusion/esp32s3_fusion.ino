@@ -11,10 +11,10 @@
 // ==========================================
 // RED (servidor)
 // ==========================================
-const char *ssid = "Galaxy S23 E57C";
-const char *password = "2ppyahxwjx4g7zu";
+const char *ssid = "Livebox6-593F";
+const char *password = "KhCSzCV5DJ4N";
 
-const char *raspberryPi_IP = "10.147.251.171";
+const char *raspberryPi_IP = "192.168.1.15";
 const int raspberryPi_PORT = 5000;
 
 WebServer server(80);

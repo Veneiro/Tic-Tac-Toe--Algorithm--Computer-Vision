@@ -13,7 +13,7 @@ except ImportError:
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================
-RUTA_MODELO = './pt/best (3).pt' 
+RUTA_MODELO = './pt/best (5).pt' 
 RUTA_IMAGEN = 'original_image1.png'
 
 NOMBRE_ROJA = 'red cross'

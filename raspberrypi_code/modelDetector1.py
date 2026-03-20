@@ -5,8 +5,8 @@ from ultralytics import YOLO
 # ==========================================
 # CONFIGURACIÓN
 # ==========================================
-RUTA_MODELO = './pt/best (3).pt' 
-RUTA_IMAGEN = 'original_image1.png'
+RUTA_MODELO = './pt/best (5).pt' 
+RUTA_IMAGEN = 'original_image.png'
 
 NOMBRE_ROJA = 'red cross'
 NOMBRE_AZUL = 'blue circle'
