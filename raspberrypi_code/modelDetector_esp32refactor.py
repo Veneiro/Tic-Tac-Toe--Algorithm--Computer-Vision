@@ -60,9 +60,11 @@ EXPANSION_AREA_POR_CELDA_FALTANTE = 0.015
 EXPANSION_AREA_MAX              = 0.18
 TOL_NIVELES_EJE                 = 0.16
 
-# IA / servidor
+# IA
 T_SOFTMAX           = 0.5
 SEARCH_DEPTH        = 2
+
+# Servidor
 DEFAULT_HOST        = 'localhost'
 DEFAULT_PORT        = 5000
 DEFAULT_GRADIO_PORT = 7860
