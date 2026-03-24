@@ -1,4 +1,4 @@
-//****************LIBRERIAS*****************
+﻿//****************LIBRERIAS*****************
 
 #include <WiFi.h>
 #include <WebServer.h>
@@ -11,11 +11,11 @@
 // ==========================================
 // RED (servidor)
 // ==========================================
-// const char *ssid = "Livebox6-593F";
-// const char *password = "KhCSzCV5DJ4N";
+const char *ssid = "Livebox6-593F";
+const char *password = "KhCSzCV5DJ4N";
 
-const char *ssid = "Livebox6-3935";
-const char *password = "k7R2b2TCTfxk";
+// const char *ssid = "Livebox6-3935";
+// const char *password = "k7R2b2TCTfxk";
 
 const char *raspberryPi_IP = "192.168.1.28";
 const int raspberryPi_PORT = 5000;
@@ -43,7 +43,11 @@ const int pinJoyButton = 3;
 // Defino los objetos que voy a utilizar
 LiquidCrystal_I2C lcd(LCD_ADDRESS, LCD_COLUMNS, LCD_ROWS); // creamos un objeto llamado lcd
 
-int inPin = 5;
+// Semaforo de LEDs
+const int pinLedRojo = 4;
+const int pinLedAmarillo = 5;
+const int pinLedVerde = 6;
+
 const int pinSwitch = 10;
 const int pinStart = 8;
 const int pinMenu = 42;
@@ -90,9 +94,17 @@ byte charBarraInvertida[8] = {
 String mensaje = "";
 bool modoAutomatico = false;
 bool juegoEnCurso = false;
+bool turnoMaquina = true; // Solo aplica en modo automatico
+
+// Estado de parpadeo del robot lateral en turno de maquina.
+unsigned long proximoParpadeoRobot = 0;
+unsigned long finParpadeoRobot = 0;
+unsigned long segundoParpadeoRobot = 0;
+bool robotParpadeando = false;
+bool robotDoblePendiente = false;
 
 // --- VARIABLE PARA EL EASTER EGG (NUEVO) ---
-bool modoEspecial = false; // False = TicTacToe, True = Snake
+int modoEspecialTipo = 0; // 0 = TicTacToe, 1 = Snake, 2 = Pacman
 
 // --- DIBUJO DE CABEZA DE SERPIENTE (NUEVO) ---
 // Es un círculo para distinguirlo de los bloques cuadrados del cuerpo
@@ -114,6 +126,11 @@ int comprobarGanador();
 void vaciarTablero();
 void actualizarLCD();
 void jugarSnake(); // Prototipo del Easter Egg
+void jugarPacman();
+void setSemaforo(bool rojo, bool amarillo, bool verde);
+void dibujarDecoracionTurnoAuto();
+void mostrarPantallaTurnoInicial(bool empiezaMaquina);
+void cargarCaracteresBase();
 
 // -------------------------------------------------------
 // FUNCIÓN AUXILIAR REVISADA: ESPERAR A QUE SUELTE EL BOTÓN
@@ -129,22 +146,15 @@ void esperarLiberacionBoton(int pin)
   delay(50); // Anti-rebote extra al soltar
 }
 
-void setup()
+void setSemaforo(bool rojo, bool amarillo, bool verde)
 {
-  //**********INICIALIZACION*****************
-  Serial.begin(115200);
+  digitalWrite(pinLedRojo, rojo ? HIGH : LOW);
+  digitalWrite(pinLedAmarillo, amarillo ? HIGH : LOW);
+  digitalWrite(pinLedVerde, verde ? HIGH : LOW);
+}
 
-  // Pines Joystick
-  pinMode(pinJoyButton, INPUT_PULLUP);
-  analogSetAttenuation(ADC_11db); // Rango completo analógico (0-4095)
-
-  pinMode(inPin, INPUT_PULLUP);
-  Wire.begin(7, 9, 400000); // SDA=7, SCL=9 (Fast I2C)
-  lcd.begin(LCD_COLUMNS, LCD_ROWS, LCD_ADDRESS);
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-
+void cargarCaracteresBase()
+{
   lcd.createChar(0, charRobot);
   lcd.createChar(1, charTrofeo);
   lcd.createChar(2, charJoy);
@@ -153,16 +163,282 @@ void setup()
   lcd.createChar(5, charEngranaje1);
   lcd.createChar(6, charEngranaje2);
   lcd.createChar(7, charSnakeHead);
+}
+
+void dibujarDecoracionTurnoAuto()
+{
+  if (!modoAutomatico)
+    return;
+
+  // Margen izquierdo: 5 columnas (0..4)
+  // Margen derecho: 6 columnas (14..19)
+  if (turnoMaquina)
+  {
+    // Parpadeo no bloqueante y aleatorio, con opcion de doble parpadeo.
+    unsigned long ahora = millis();
+
+    if (proximoParpadeoRobot == 0)
+    {
+      proximoParpadeoRobot = ahora + (unsigned long)random(1400, 4200);
+    }
+
+    if (!robotParpadeando && ahora >= proximoParpadeoRobot)
+    {
+      robotParpadeando = true;
+      finParpadeoRobot = ahora + (unsigned long)random(90, 170);
+      if (random(100) < 35)
+      {
+        robotDoblePendiente = true;
+        segundoParpadeoRobot = finParpadeoRobot + (unsigned long)random(90, 220);
+      }
+      else
+      {
+        robotDoblePendiente = false;
+      }
+    }
+
+    if (robotParpadeando && ahora >= finParpadeoRobot)
+    {
+      robotParpadeando = false;
+      if (!robotDoblePendiente)
+      {
+        proximoParpadeoRobot = ahora + (unsigned long)random(1400, 4800);
+      }
+    }
+
+    if (!robotParpadeando && robotDoblePendiente && ahora >= segundoParpadeoRobot)
+    {
+      robotParpadeando = true;
+      robotDoblePendiente = false;
+      finParpadeoRobot = ahora + (unsigned long)random(80, 150);
+      proximoParpadeoRobot = finParpadeoRobot + (unsigned long)random(1600, 5200);
+    }
+
+    bool ojosCerrados = robotParpadeando;
+
+    // Turno maquina: cabeza de robot a la izquierda
+    lcd.setCursor(1, 1); lcd.print("_|_");
+    lcd.setCursor(1, 2); lcd.print(ojosCerrados ? ">_<" : "O_O");
+    lcd.setCursor(1, 3); lcd.print("|:|");
+
+    // Limpiar monigote derecho
+    lcd.setCursor(14, 1); lcd.print("      ");
+    lcd.setCursor(14, 2); lcd.print("      ");
+    lcd.setCursor(14, 3); lcd.print("      ");
+  }
+  else
+  {
+    robotParpadeando = false;
+    robotDoblePendiente = false;
+    proximoParpadeoRobot = millis() + (unsigned long)random(1200, 3600);
+
+    // Limpiar brazo izquierdo
+    lcd.setCursor(0, 1); lcd.print("     ");
+    lcd.setCursor(0, 2); lcd.print("     ");
+    lcd.setCursor(0, 3); lcd.print("     ");
+
+    // Turno humano: cabeza de persona a la derecha
+    lcd.setCursor(15, 1); lcd.print(" o ");
+    lcd.setCursor(15, 2); lcd.print("/|"); lcd.write(4);
+    lcd.setCursor(15, 3); lcd.print("/ "); lcd.write(4);
+  }
+}
+
+void mostrarPantallaTurnoInicial(bool empiezaMaquina)
+{
+  const String lineaTurno = empiezaMaquina ? "Player 2" : "Player 1";
+  const int xTurno = (20 - (int)lineaTurno.length()) / 2;
+
+  // Estados: 0 = cayendo, 1..4 = impacto/onda.
+  const int gotas = 8;
+  byte estado[gotas];
+  int gotaX[gotas];
+  int gotaY[gotas];
+  unsigned long proximoPaso[gotas];
+
+  for (int i = 0; i < gotas; i++)
+  {
+    estado[i] = 0;
+    gotaX[i] = random(0, 20);
+    gotaY[i] = random(-8, 1);
+    proximoPaso[i] = millis() + (unsigned long)random(40, 180);
+  }
+
+  char lastScreen[4][21] = {
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    "
+  };
+
+  unsigned long inicio = millis();
+  unsigned long duracion = 5200;
+  unsigned long ultimoTickGotas = 0;
+
+  while (millis() - inicio < duracion)
+  {
+    server.handleClient();
+    unsigned long t = millis() - inicio;
+
+    // Avance temporal de gotas + ondas con tiempos aleatorios.
+    if (millis() - ultimoTickGotas >= 25)
+    {
+      for (int i = 0; i < gotas; i++)
+      {
+        if (millis() < proximoPaso[i]) continue;
+
+        if (estado[i] == 0)
+        {
+          gotaY[i]++;
+          if (gotaY[i] >= 3)
+          {
+            gotaY[i] = 3;
+            estado[i] = 1;
+            proximoPaso[i] = millis() + (unsigned long)random(65, 120);
+          }
+          else
+          {
+            proximoPaso[i] = millis() + (unsigned long)random(55, 125);
+          }
+        }
+        else
+        {
+          estado[i]++;
+          if (estado[i] > 4)
+          {
+            estado[i] = 0;
+            gotaX[i] = random(0, 20);
+            gotaY[i] = random(-10, -2);
+            proximoPaso[i] = millis() + (unsigned long)random(120, 420);
+          }
+          else
+          {
+            proximoPaso[i] = millis() + (unsigned long)random(70, 130);
+          }
+        }
+      }
+      ultimoTickGotas = millis();
+    }
+
+    char screen[4][21];
+    for (int r = 0; r < 4; r++) strcpy(screen[r], "                    ");
+
+    // Lluvia ASCII con impacto y ondas (estilo rain-drops).
+    for (int i = 0; i < gotas; i++)
+    {
+      int x = gotaX[i];
+
+      if (estado[i] == 0)
+      {
+        int y = gotaY[i];
+        if (y >= 0 && y < 4 && x >= 0 && x < 20) screen[y][x] = '|';
+        if (y - 1 >= 0 && y - 1 < 4 && x >= 0 && x < 20) screen[y - 1][x] = '.';
+      }
+      else if (estado[i] == 1)
+      {
+        if (x >= 0 && x < 20) screen[3][x] = 'o';
+      }
+      else if (estado[i] == 2)
+      {
+        if (x - 1 >= 0) screen[3][x - 1] = '(';
+        if (x + 1 < 20) screen[3][x + 1] = ')';
+        if (x >= 0 && x < 20) screen[2][x] = '.';
+      }
+      else if (estado[i] == 3)
+      {
+        if (x - 2 >= 0) screen[3][x - 2] = '(';
+        if (x + 2 < 20) screen[3][x + 2] = ')';
+        if (x - 1 >= 0) screen[3][x - 1] = '-';
+        if (x + 1 < 20) screen[3][x + 1] = '-';
+        if (x >= 0 && x < 20) screen[3][x] = '_';
+      }
+      else if (estado[i] == 4)
+      {
+        if (x - 3 >= 0) screen[3][x - 3] = '.';
+        if (x + 3 < 20) screen[3][x + 3] = '.';
+        if (x - 2 >= 0) screen[3][x - 2] = '-';
+        if (x + 2 < 20) screen[3][x + 2] = '-';
+      }
+    }
+
+    int letrasTurno = 0;
+    if (t > 700)
+    {
+      letrasTurno = (t - 700) / 90;
+      if (letrasTurno > (int)lineaTurno.length()) letrasTurno = lineaTurno.length();
+    }
+
+    for (int i = 0; i < letrasTurno; i++)
+    {
+      int x = xTurno + i;
+      if (x >= 0 && x < 20) screen[1][x] = lineaTurno[i];
+    }
+
+    // Cursor parpadeante durante la escritura.
+    bool showCursor = (t / 220) % 2 == 0;
+    if (showCursor)
+    {
+      if (t > 700 && letrasTurno < (int)lineaTurno.length())
+      {
+        int cx = xTurno + letrasTurno;
+        if (cx >= 0 && cx < 20) screen[1][cx] = (char)255;
+      }
+    }
+
+    for (int r = 0; r < 4; r++)
+    {
+      if (memcmp(screen[r], lastScreen[r], 20) != 0)
+      {
+        lcd.setCursor(0, r);
+        for (int c = 0; c < 20; c++)
+        {
+          if (screen[r][c] == (char)255) lcd.write(255);
+          else lcd.print(screen[r][c]);
+        }
+        memcpy(lastScreen[r], screen[r], 21);
+      }
+    }
+
+    delay(40);
+  }
+
+  transicionBarrido();
+  lcd.clear();
+}
+
+void setup()
+{
+  //**********INICIALIZACION*****************
+  Serial.begin(115200);
+  randomSeed(micros());
+
+  // Pines Joystick
+  pinMode(pinJoyButton, INPUT_PULLUP);
+  analogSetAttenuation(ADC_11db); // Rango completo analógico (0-4095)
+
+  pinMode(pinLedRojo, OUTPUT);
+  pinMode(pinLedAmarillo, OUTPUT);
+  pinMode(pinLedVerde, OUTPUT);
+  setSemaforo(false, false, false);
+
+  Wire.begin(7, 9, 400000); // SDA=7, SCL=9 (Fast I2C)
+  lcd.begin(LCD_COLUMNS, LCD_ROWS, LCD_ADDRESS);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+
+  cargarCaracteresBase();
 
   pinMode(pinSwitch, INPUT_PULLUP);
   pinMode(pinStart, INPUT_PULLUP);
   pinMode(pinMenu, INPUT_PULLUP);
   //*********************************************
 
-  mostrarBienvenida();
-
-  // ---- Inicialización WiFi y servidor ----
+  // ---- Inicialización WiFi y pantalla de arranque ----
+  // Iniciamos la conexión primero para que la pantalla CONNECTING...
+  // permanezca activa hasta que la WiFi esté realmente conectada.
   connectToWiFi();
+  mostrarBienvenida();
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/tablero", HTTP_POST, handleTablero);
@@ -177,12 +453,18 @@ void loop()
   // 1. Fase de menu
   esperarSeleccionMenu();
 
-  if (modoEspecial) 
+  if (modoEspecialTipo == 1)
   {
     // EASTER EGG: Snake Mode
     jugarSnake();
-    modoEspecial = false; // Reset al terminar
-  } 
+    modoEspecialTipo = 0; // Reset al terminar
+  }
+  else if (modoEspecialTipo == 2)
+  {
+    // EASTER EGG: Pacman Mode
+    jugarPacman();
+    modoEspecialTipo = 0; // Reset al terminar
+  }
   else 
   {
     //  2. Fase de juego
@@ -202,11 +484,15 @@ void mostrarBienvenida()
   String linea2 = "CONNECTING...";   
 
   unsigned long startTime = millis();
-  unsigned long duracionTotal = 8000; 
+  unsigned long duracionMinimaAnimacion = 8000;
+  unsigned long ultimoPuntoSerial = 0;
 
-  while (millis() - startTime < duracionTotal) 
+  // Mantiene la animación al menos su duración mínima y,
+  // si aún no hay WiFi, permanece en CONNECTING... hasta conectar.
+  while ((millis() - startTime < duracionMinimaAnimacion) || (WiFi.status() != WL_CONNECTED))
   {
     unsigned long tiempoTranscurrido = millis() - startTime;
+    bool wifiConectada = (WiFi.status() == WL_CONNECTED);
     int letrasLinea1 = 0;
     int letrasLinea2 = 0;
 
@@ -217,9 +503,16 @@ void mostrarBienvenida()
     }
     
     // Fase 3: Letras de la línea 2
-    if (tiempoTranscurrido > 5000) { 
+    if (tiempoTranscurrido > 5000) {
       letrasLinea2 = (tiempoTranscurrido - 5000) / 200; 
       if (letrasLinea2 > 13) letrasLinea2 = 13;
+    }
+
+    // Cuando termina la animación de escritura y la WiFi aún no conecta,
+    // dejamos el texto completo fijo en pantalla hasta conectar.
+    if (tiempoTranscurrido > duracionMinimaAnimacion && !wifiConectada) {
+      letrasLinea1 = 11;
+      letrasLinea2 = 13;
     }
 
     // --- LÓGICA DEL CURSOR BLANCO PARPADEANTE ---
@@ -290,8 +583,19 @@ void mostrarBienvenida()
       }
     }
 
+    // Retroalimentación en serial mientras espera conexión.
+    if (!wifiConectada && millis() - ultimoPuntoSerial >= 500) {
+      Serial.print(".");
+      ultimoPuntoSerial = millis();
+    }
+
     delay(50); 
   }
+
+  Serial.println("\nWiFi conectado");
+  Serial.print("IP del ESP32-S3: ");
+  Serial.println(WiFi.localIP());
+
   transicionBarrido();
   lcd.clear();
 }
@@ -357,10 +661,10 @@ void esperarSeleccionMenu()
     bool flechasDentro = (t / 400) % 2 == 0;
     if (flechasDentro) {
       filaActual3[2] = '>'; filaActual3[3] = '>';
-      filaActual3[16] = '<'; filaActual3[17] = '<';
+      filaActual3[15] = '<'; filaActual3[16] = '<';
     } else {
       filaActual3[1] = '>'; filaActual3[2] = '>';
-      filaActual3[17] = '<'; filaActual3[18] = '<';
+      filaActual3[16] = '<'; filaActual3[17] = '<';
     }
 
     // Lógica del Barrido de "PULSE START"
@@ -405,17 +709,28 @@ void esperarSeleccionMenu()
     delay(20); 
   }
   
-  // --- CHEQUEO DEL EASTER EGG (Pulsar ambos a la vez) ---
-  if (digitalRead(pinMenu) == HIGH) {
-    modoEspecial = true;
+  // --- CHEQUEO DE EASTER EGGS ---
+  // MENU + JOY -> Pacman
+  // MENU solo -> Snake
+  if (digitalRead(pinMenu) == HIGH && digitalRead(pinJoyButton) == LOW) {
+    modoEspecialTipo = 2;
+  } else if (digitalRead(pinMenu) == HIGH) {
+    modoEspecialTipo = 1;
   } else {
-    modoEspecial = false;
+    modoEspecialTipo = 0;
   }
 
   esperarLiberacionBoton(pinStart);
   
-  if (modoEspecial) {
+  if (modoEspecialTipo != 0) {
     esperarLiberacionBoton(pinMenu);
+    if (modoEspecialTipo == 2) {
+      while (digitalRead(pinJoyButton) == LOW) {
+        server.handleClient();
+        delay(10);
+      }
+      delay(40);
+    }
   } else {
     confirmarInicio();
   }
@@ -506,6 +821,7 @@ void ejecutarPartida1()
   vaciarTablero();
   tableroPendiente = false;
   juegoEnCurso = true;
+  setSemaforo(false, false, false);
 
   int ganador = comprobarGanador();
   bool abortarPartida = false;        
@@ -513,13 +829,28 @@ void ejecutarPartida1()
 
   if (modoAutomatico == true)
   {
+    // Sorteo de inicio: Jugador 1 (humano) o Jugador 2 (brazo robotico).
+    turnoMaquina = (random(100) < 50);
+    mostrarPantallaTurnoInicial(turnoMaquina);
+
+    if (turnoMaquina) setSemaforo(true, false, false);
+    else setSemaforo(false, false, true);
+
     // --- NUEVO: ANIMACIÓN TIPO ESCÁNER AL ENTRAR AL TABLERO ---
     animarEntradaTablero(); 
     actualizarLCD();
+    dibujarDecoracionTurnoAuto();
+
+    bool ultimoEstadoStartAuto = digitalRead(pinStart);
 
     while (ganador == 0 && !abortarPartida)
     {
       server.handleClient(); 
+
+      // Refrescar animacion lateral durante el turno de la maquina.
+      if (turnoMaquina) {
+        dibujarDecoracionTurnoAuto();
+      }
 
       bool lecturaMenu = digitalRead(pinMenu);
       if (lecturaMenu == HIGH && ultimoEstadoMenu == LOW)
@@ -530,6 +861,8 @@ void ejecutarPartida1()
         // --- LÓGICA DE SALIDA DRAMÁTICA (AUTO) ---
         if (abortarPartida)
         {
+          setSemaforo(false, false, false);
+
           // Animación: Robot cayéndose y desactivándose
           lcd.clear();
           // Fotograma 1: De pie, cansado
@@ -562,20 +895,54 @@ void ejecutarPartida1()
           // Ya no ponemos "ESTADO DEL TABLERO", porque actualizarLCD()
           // ahora se encarga de poner su propio título decorado.
           actualizarLCD();
+          dibujarDecoracionTurnoAuto();
         }
       }
       ultimoEstadoMenu = lecturaMenu;
 
       if (tableroPendiente && !abortarPartida)
       {
-        String local = tableroRecibidoHttp;
-        tableroPendiente = false;
-        procesarEntradaTablero(local);
-        ganador = comprobarGanador();
+        if (turnoMaquina)
+        {
+          String local = tableroRecibidoHttp;
+          tableroPendiente = false;
+          procesarEntradaTablero(local);
+          ganador = comprobarGanador();
+
+          // Si no termina partida, pasa a turno jugador.
+          if (ganador == 0)
+          {
+            turnoMaquina = false;
+            setSemaforo(false, false, true); // Turno jugador: verde
+            dibujarDecoracionTurnoAuto();
+            Serial.println("[TURN] Turno jugador: pulsa START para continuar");
+          }
+        }
+        else
+        {
+          tableroPendiente = false;
+          Serial.println("[TURN] Tablero descartado: no es turno de maquina");
+        }
+      }
+
+      // Turno jugador: hasta START no vuelve turno maquina.
+      if (!turnoMaquina && !abortarPartida && ganador == 0)
+      {
+        bool estadoStartAuto = digitalRead(pinStart);
+        if (estadoStartAuto == HIGH && ultimoEstadoStartAuto == LOW)
+        {
+          esperarLiberacionBoton(pinStart);
+          turnoMaquina = true;
+          setSemaforo(true, false, false);
+          dibujarDecoracionTurnoAuto();
+          Serial.println("[TURN] Turno maquina: esperando nuevo tablero");
+        }
+        ultimoEstadoStartAuto = estadoStartAuto;
       }
     }
 
     juegoEnCurso = false; 
+    setSemaforo(false, false, false);
 
     if (abortarPartida) {
       return; 
@@ -587,6 +954,8 @@ void ejecutarPartida1()
     // ======================================================
     // MODO MANUAL (Con cambio a eje Z)
     // ======================================================
+    setSemaforo(false, true, false);
+
     lcd.clear();
     lcd.setCursor(2, 0);
     lcd.print("-- MANUAL MODE --");
@@ -645,8 +1014,7 @@ void ejecutarPartida1()
           lcd.setCursor(3, 0); lcd.print("CRITICAL ERROR!!");
           lcd.setCursor(0, 1); lcd.print("X:[XXXXXXXXXXXXX]");
           lcd.setCursor(0, 2); lcd.print("Y:[XXXXXXXXXXXXX]");
-          // Centramos "DECALIBRADO!" (12 letras) -> empezamos en col 4
-          lcd.setCursor(4, 3); lcd.print("RESTARTING...");
+          lcd.setCursor(1, 3); lcd.print("LEAVING MANUAL MODE");
           
           delay(1500);
           break; // Salir del while del manual
@@ -723,6 +1091,7 @@ void ejecutarPartida1()
     }
 
     juegoEnCurso = false; 
+  setSemaforo(false, false, false);
 
     if (abortarPartida) {
       return; 
@@ -977,7 +1346,7 @@ void animarEntradaTablero()
   
   // Fase 1: El título aparece letra a letra (Efecto escáner terminal)
   // Usamos 20 caracteres exactos para centrarlo perfecto
-  String titulo = "=== [  BOARD  ] === "; 
+  String titulo = "===  [ BOARD ]   ===";
   lcd.setCursor(0, 0);
   for(int i = 0; i < titulo.length(); i++) {
     lcd.print(titulo[i]);
@@ -988,7 +1357,7 @@ void animarEntradaTablero()
   // Fase 2: Los corchetes exteriores caen fila por fila (Perfectamente centrados)
   for (int i = 1; i <= 3; i++) {
     lcd.setCursor(0, i);
-    lcd.print("     [       ]      "); 
+    lcd.print("      [     ]       "); 
     delay(120);
   }
 
@@ -1045,14 +1414,14 @@ void actualizarLCD()
 
   // 2. Decoración superior elegante (20 caracteres exactos)
   lcd.setCursor(0, 0);
-  lcd.print("=== [  BOARD  ] === ");
+  lcd.print("===  [ BOARD ]   ===");
 
   // 3. ANIMACIÓN DE APARICIÓN (Solo se ejecuta si detecta una ficha nueva)
   if (hayCambio) {
     // FASE 1: Un pequeño puntito donde va a aparecer la ficha
     for (int i = 0; i < 3; i++) {
       lcd.setCursor(0, i + 1);
-      lcd.print("     [ "); // Espacios ajustados para centrar
+      lcd.print("      ["); // Espacios ajustados para centrar
       for (int j = 0; j < 3; j++) {
         bool esNueva = (tablero[i][j] != tableroAnterior[i][j] && tablero[i][j] != 0);
         if (esNueva) lcd.print(".");
@@ -1061,14 +1430,14 @@ void actualizarLCD()
         else if (tableroAnterior[i][j] == 2) lcd.print("O");
         if (j < 2) lcd.print("|");
       }
-      lcd.print(" ]      "); // Limpia la basura de la derecha
+      lcd.print("]       "); // Limpia la basura de la derecha
     }
     delay(150); 
 
     // FASE 2: El destello de luz
     for (int i = 0; i < 3; i++) {
       lcd.setCursor(0, i + 1);
-      lcd.print("     [ ");
+      lcd.print("      [");
       for (int j = 0; j < 3; j++) {
         bool esNueva = (tablero[i][j] != tableroAnterior[i][j] && tablero[i][j] != 0);
         if (esNueva) lcd.write(3); // Carácter personalizado de destello
@@ -1077,17 +1446,17 @@ void actualizarLCD()
         else if (tableroAnterior[i][j] == 2) lcd.print("O");
         if (j < 2) lcd.print("|");
       }
-      lcd.print(" ]      ");
+      lcd.print("]       ");
     }
     delay(150); 
   }
 
   // 3. Dibujo final y estático del tablero
   lcd.setCursor(0, 0);
-  lcd.print("=== [  BOARD  ] === ");
+  lcd.print("===  [ BOARD ]   ===");
   for (int i = 0; i < 3; i++) {
     lcd.setCursor(0, i + 1);
-    lcd.print("     [ ");
+    lcd.print("      [");
     for (int j = 0; j < 3; j++) {
       if (tablero[i][j] == 0) lcd.print(" ");
       else if (tablero[i][j] == 1) lcd.print("X");
@@ -1095,7 +1464,7 @@ void actualizarLCD()
       if (j < 2) lcd.print("|");
       tableroAnterior[i][j] = tablero[i][j];
     }
-    lcd.print(" ]      ");
+    lcd.print("]       ");
   }
 
   // --- LÓGICA DE LA COPA (SOLO SI HAY GANADOR REAL 1 o 2) ---
@@ -1203,16 +1572,6 @@ void connectToWiFi()
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("\nWiFi conectado");
-  Serial.print("IP del ESP32-S3: ");
-  Serial.println(WiFi.localIP());
 }
 
 bool parseBoardToMatrix(const String &input)
@@ -1339,6 +1698,12 @@ void handleTablero()
     return;
   }
 
+  if (!turnoMaquina)
+  {
+    server.send(202, "text/plain", "Ignorado: turno jugador");
+    return;
+  }
+
   tableroRecibidoHttp = server.arg("plain");
   tableroPendiente = true;
 
@@ -1353,6 +1718,581 @@ void handleTablero()
 void handleRoot()
 {
   server.send(200, "text/plain", "ESP32-S3 fusion listo. Usa POST /tablero");
+}
+
+// =========================================================
+// EASTER EGG: MODO PACMAN
+// =========================================================
+void jugarPacman() {
+  lcd.clear();
+
+  // --- Intro estilo Snake pero con PACMAN ---
+  unsigned long startAnim = millis();
+  String txt1 = "--- PACMAN ---";
+  String txt2 = "EASTER EGG FOUND";
+  char lastScreen[4][21] = {
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    "
+  };
+
+  while (millis() - startAnim < 5200) {
+    server.handleClient();
+    unsigned long t = millis() - startAnim;
+    char screen[4][21];
+    for (int i = 0; i < 4; i++) strcpy(screen[i], "                    ");
+
+    int frame = (t / 150) % 4;
+    char chars1[] = {'|', '/', '-', 4};
+    char chars2[] = {'+', 'x', '*', 'o'};
+
+    for (int r = 0; r < 4; r++) {
+      for (int c = 0; c < 20; c++) {
+        int dist = abs(c - 9) + abs(r - 1);
+        if (dist == (t / 200) % 12) screen[r][c] = chars1[frame];
+        else if (dist == ((t / 200) + 4) % 12) screen[r][c] = chars2[frame];
+      }
+    }
+
+    int l1 = (t > 1200) ? (t - 1200) / 110 : 0;
+    if (l1 > (int)txt1.length()) l1 = txt1.length();
+    int l2 = (t > 2800) ? (t - 2800) / 95 : 0;
+    if (l2 > (int)txt2.length()) l2 = txt2.length();
+
+    for (int i = 0; i < l1; i++) screen[1][3 + i] = txt1[i];
+    for (int i = 0; i < l2; i++) screen[2][2 + i] = txt2[i];
+
+    bool cur = (t / 250) % 2 == 0;
+    if (t > 1200 && t < 2800 && l1 < (int)txt1.length() && cur) screen[1][3 + l1] = (char)255;
+    if (t > 2800 && l2 < (int)txt2.length() && cur) screen[2][2 + l2] = (char)255;
+
+    for (int i = 0; i < 4; i++) {
+      if (strcmp(screen[i], lastScreen[i]) != 0) {
+        lcd.setCursor(0, i);
+        for (int j = 0; j < 20; j++) {
+          if (screen[i][j] == 4) lcd.write(4);
+          else if (screen[i][j] == (char)255) lcd.write(255);
+          else lcd.print(screen[i][j]);
+        }
+        strcpy(lastScreen[i], screen[i]);
+      }
+    }
+    delay(40);
+  }
+
+  // --- Caracteres personalizados temporales para Pacman ---
+  byte charPacRight[8]  = {0b00000, 0b01110, 0b11011, 0b11100, 0b11100, 0b11011, 0b01110, 0b00000};
+  byte charPacLeft[8]   = {0b00000, 0b01110, 0b11011, 0b00111, 0b00111, 0b11011, 0b01110, 0b00000};
+  byte charPacClosed[8] = {0b00000, 0b01110, 0b11111, 0b11111, 0b11111, 0b11111, 0b01110, 0b00000};
+  byte charGhost[8]     = {0b00000, 0b01110, 0b11111, 0b10101, 0b11111, 0b11111, 0b10101, 0b00000};
+  byte charGhostFear[8] = {0b00000, 0b01110, 0b11111, 0b10001, 0b11111, 0b10101, 0b11111, 0b00000};
+  byte charLife[8]      = {0b00000, 0b01110, 0b11111, 0b11100, 0b11100, 0b11111, 0b01110, 0b00000};
+  byte charFruit[8]     = {0b00000, 0b00100, 0b01110, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
+  byte charEyes[8]      = {0b00000, 0b00000, 0b11011, 0b11011, 0b00000, 0b00000, 0b00000, 0b00000};
+
+  lcd.createChar(0, charPacRight);
+  lcd.createChar(1, charPacLeft);
+  lcd.createChar(2, charPacClosed);
+  lcd.createChar(3, charGhost);
+  lcd.createChar(4, charGhostFear);
+  lcd.createChar(5, charLife);
+  lcd.createChar(6, charFruit);
+  lcd.createChar(7, charEyes);
+
+  bool reiniciar = true;
+  while (reiniciar) {
+    reiniciar = false;
+
+    const int W = 20;
+    const int H = 3;
+    byte mapa[H][W]; // 0 vacio, 1 pellet, 2 power pellet, 3 pared
+
+    // Mapa más jugable (sin salida bloqueada al spawn).
+    const char *plantilla[H] = {
+      "....................",
+      ".##....##..##....##.",
+      "...................."
+    };
+
+    const int G = 4;
+    int gStartX[G] = {10, 9, 6, 13};
+    int gStartY[G] = {1, 1, 1, 1};
+    int gx[G], gy[G], gDir[G], gEstado[G];
+    // Estado fantasma: 0 normal, 1 frightened, 2 eaten
+
+    int pacX = 1, pacY = 2;
+    int dirPac = 1, nextDirPac = 1; // 0 up, 1 right, 2 down, 3 left
+
+    int score = 0;
+    int vidas = 3;
+    int nivel = 1;
+    int comboFantasmas = 200;
+    bool salidaForzada = false;
+    bool extraVidaDada = false;
+
+    unsigned long miedoHasta = 0;
+    unsigned long lastPacMove = 0;
+    unsigned long lastGhostMove = 0;
+    unsigned long faseStart = millis();
+    unsigned long invulnerableHasta = 0;
+    unsigned long frutaHasta = 0;
+    bool frutaActiva = false;
+    int frutaX = 10;
+    int frutaY = 1;
+
+    unsigned long ghostReleaseAt[G];
+    unsigned long faseCambio = 0;
+    int faseModo = 0; // 0 scatter, 1 chase
+    int fasePaso = 0;
+
+    auto iniciarNivel = [&]() {
+      for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+          mapa[y][x] = (plantilla[y][x] == '#') ? 3 : 1;
+        }
+      }
+
+      mapa[0][0] = 2;
+      mapa[0][19] = 2;
+      mapa[2][0] = 2;
+      mapa[2][19] = 2;
+
+      pacX = 1;
+      pacY = 2;
+      dirPac = 1;
+      nextDirPac = 1;
+
+      for (int i = 0; i < G; i++) {
+        gx[i] = gStartX[i];
+        gy[i] = gStartY[i];
+        gDir[i] = (i % 2 == 0) ? 1 : 3;
+        gEstado[i] = 0;
+      }
+
+      // Salida escalonada como en original.
+      unsigned long ahora = millis();
+      ghostReleaseAt[0] = ahora + 500;
+      ghostReleaseAt[1] = ahora + 2200;
+      ghostReleaseAt[2] = ahora + 4200;
+      ghostReleaseAt[3] = ahora + 6200;
+
+      faseModo = 0;
+      fasePaso = 0;
+      faseCambio = ahora + 7000;
+
+      comboFantasmas = 200;
+      miedoHasta = 0;
+      frutaActiva = false;
+      frutaHasta = 0;
+      invulnerableHasta = ahora + 1800;
+      faseStart = ahora;
+      lastPacMove = ahora;
+      lastGhostMove = ahora;
+    };
+
+    auto puedeMover = [&](int x, int y, int dir) {
+      int nx = x, ny = y;
+      if (dir == 0) ny--;
+      if (dir == 1) nx++;
+      if (dir == 2) ny++;
+      if (dir == 3) nx--;
+
+      if (nx < 0) nx = W - 1;
+      if (nx >= W) nx = 0;
+      if (ny < 0 || ny >= H) return false;
+      return mapa[ny][nx] != 3;
+    };
+
+    auto moverPos = [&](int &x, int &y, int dir) {
+      if (dir == 0) y--;
+      if (dir == 1) x++;
+      if (dir == 2) y++;
+      if (dir == 3) x--;
+      if (x < 0) x = W - 1;
+      if (x >= W) x = 0;
+    };
+
+    auto pelletsRestantes = [&]() {
+      int p = 0;
+      for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+          if (mapa[y][x] == 1 || mapa[y][x] == 2) p++;
+        }
+      }
+      return p;
+    };
+
+    auto dirOpuesta = [&](int d) {
+      return (d + 2) % 4;
+    };
+
+    auto distTaxi = [&](int x1, int y1, int x2, int y2) {
+      int dx = abs(x1 - x2);
+      dx = min(dx, W - dx);
+      int dy = abs(y1 - y2);
+      return dx + dy;
+    };
+
+    auto targetScatterX = [&](int i) {
+      if (i == 0) return 19;
+      if (i == 1) return 0;
+      if (i == 2) return 19;
+      return 0;
+    };
+
+    auto targetScatterY = [&](int i) {
+      if (i == 0) return 0;
+      if (i == 1) return 0;
+      if (i == 2) return 2;
+      return 2;
+    };
+
+    auto escogerDirFantasma = [&](int i, bool frightened) {
+      int opciones[4];
+      int n = 0;
+      for (int d = 0; d < 4; d++) {
+        if (!puedeMover(gx[i], gy[i], d)) continue;
+        if (d == dirOpuesta(gDir[i])) continue; // evita giros bruscos salvo atajo
+        opciones[n++] = d;
+      }
+      if (n == 0) {
+        for (int d = 0; d < 4; d++) {
+          if (puedeMover(gx[i], gy[i], d)) opciones[n++] = d;
+        }
+      }
+      if (n == 0) return gDir[i];
+
+      if (frightened) {
+        return opciones[random(0, n)];
+      }
+
+      int tx = pacX;
+      int ty = pacY;
+
+      // Comportamientos inspirados en los originales.
+      if (gEstado[i] == 2) {
+        tx = gStartX[i];
+        ty = gStartY[i];
+      } else if (faseModo == 0) {
+        tx = targetScatterX(i);
+        ty = targetScatterY(i);
+      } else {
+        if (i == 0) {
+          // Blinky: directo a Pac-Man.
+          tx = pacX;
+          ty = pacY;
+        } else if (i == 1) {
+          // Pinky: 3 celdas por delante.
+          tx = pacX;
+          ty = pacY;
+          for (int k = 0; k < 3; k++) {
+            if (dirPac == 0) ty--;
+            if (dirPac == 1) tx++;
+            if (dirPac == 2) ty++;
+            if (dirPac == 3) tx--;
+            if (tx < 0) tx = W - 1;
+            if (tx >= W) tx = 0;
+          }
+        } else if (i == 2) {
+          // Inky simplificado: vector entre Blinky y Pac-Man adelantado.
+          int ax = pacX, ay = pacY;
+          if (dirPac == 1) ax = (ax + 2) % W;
+          if (dirPac == 3) ax = (ax - 2 + W) % W;
+          if (dirPac == 0) ay = max(0, ay - 2);
+          if (dirPac == 2) ay = min(H - 1, ay + 2);
+          tx = (ax * 2 - gx[0] + W * 2) % W;
+          ty = constrain(ay * 2 - gy[0], 0, H - 1);
+        } else {
+          // Clyde: persigue lejos, se dispersa cerca.
+          if (distTaxi(gx[i], gy[i], pacX, pacY) > 6) {
+            tx = pacX;
+            ty = pacY;
+          } else {
+            tx = targetScatterX(i);
+            ty = targetScatterY(i);
+          }
+        }
+      }
+
+      int bestD = opciones[0];
+      int bestV = 9999;
+      for (int k = 0; k < n; k++) {
+        int d = opciones[k];
+        int nx = gx[i], ny = gy[i];
+        if (d == 0) ny--;
+        if (d == 1) nx++;
+        if (d == 2) ny++;
+        if (d == 3) nx--;
+        if (nx < 0) nx = W - 1;
+        if (nx >= W) nx = 0;
+        int v = distTaxi(nx, ny, tx, ty);
+        if (v < bestV) {
+          bestV = v;
+          bestD = d;
+        }
+      }
+      return bestD;
+    };
+
+    auto comprobarColisiones = [&](bool &muerto) {
+      unsigned long ahora = millis();
+      bool frightened = ahora < miedoHasta;
+      for (int i = 0; i < G; i++) {
+        if (gx[i] == pacX && gy[i] == pacY) {
+          if (gEstado[i] == 2) continue;
+          if (frightened) {
+            gEstado[i] = 2; // comido
+            score += comboFantasmas;
+            comboFantasmas = min(comboFantasmas * 2, 1600);
+          } else if (ahora > invulnerableHasta) {
+            muerto = true;
+            return;
+          }
+        }
+      }
+    };
+
+    iniciarNivel();
+
+    bool jugando = true;
+    while (jugando) {
+      server.handleClient();
+
+      if (digitalRead(pinMenu) == HIGH) {
+        esperarLiberacionBoton(pinMenu);
+        salidaForzada = true;
+        break;
+      }
+
+      unsigned long ahora = millis();
+
+      // Ciclo scatter/chase clásico simplificado.
+      if (ahora > faseCambio) {
+        if (fasePaso < 7) {
+          faseModo = (faseModo == 0) ? 1 : 0;
+          fasePaso++;
+          if (faseModo == 0) faseCambio = ahora + 7000;
+          else faseCambio = ahora + 20000;
+        } else {
+          faseModo = 1;
+          faseCambio = ahora + 60000;
+        }
+      }
+
+      int joyX = analogRead(pinJoyX);
+      int joyY = analogRead(pinJoyY);
+      int difX = abs(joyX - 2048);
+      int difY = abs(joyY - 2048);
+      if (difX > difY && difX > 800) {
+        if (joyX < 1200) nextDirPac = 3;
+        else if (joyX > 2800) nextDirPac = 1;
+      } else if (difY > difX && difY > 800) {
+        if (joyY < 1200) nextDirPac = 0;
+        else if (joyY > 2800) nextDirPac = 2;
+      }
+
+      int velPac = max(85, 165 - (nivel - 1) * 7);
+      int velGhost = max(100, 205 - (nivel - 1) * 8);
+      bool frightened = ahora < miedoHasta;
+      if (frightened) velGhost += 35;
+
+      // Fruta bonus (dos apariciones por nivel según pellets restantes).
+      int pellets = pelletsRestantes();
+      if (!frutaActiva && pellets < 30 && frutaHasta == 0) {
+        frutaActiva = true;
+        frutaHasta = ahora + 6000;
+      } else if (!frutaActiva && pellets < 12 && frutaHasta != 0) {
+        frutaActiva = true;
+        frutaHasta = ahora + 5000;
+      }
+      if (frutaActiva && ahora > frutaHasta) frutaActiva = false;
+
+      // READY inicial como en clásico.
+      if (ahora - faseStart < 1300) {
+        lcd.setCursor(0, 0); lcd.print("READY!      PACMAN ");
+      }
+
+      if (ahora - lastPacMove >= (unsigned long)velPac && ahora - faseStart >= 1300) {
+        lastPacMove = ahora;
+
+        if (puedeMover(pacX, pacY, nextDirPac)) dirPac = nextDirPac;
+        if (puedeMover(pacX, pacY, dirPac)) moverPos(pacX, pacY, dirPac);
+
+        if (mapa[pacY][pacX] == 1) {
+          mapa[pacY][pacX] = 0;
+          score += 10;
+        } else if (mapa[pacY][pacX] == 2) {
+          mapa[pacY][pacX] = 0;
+          score += 50;
+          miedoHasta = ahora + max(2600, 6800 - (nivel - 1) * 420);
+          comboFantasmas = 200;
+          for (int i = 0; i < G; i++) {
+            if (gEstado[i] == 0) gEstado[i] = 1;
+          }
+        }
+
+        if (frutaActiva && pacX == frutaX && pacY == frutaY) {
+          score += 100 + nivel * 20;
+          frutaActiva = false;
+        }
+
+        if (!extraVidaDada && score >= 10000) {
+          vidas++;
+          extraVidaDada = true;
+        }
+
+        bool muerto = false;
+        comprobarColisiones(muerto);
+        if (muerto) {
+          vidas--;
+          if (vidas <= 0) {
+            jugando = false;
+          } else {
+            iniciarNivel();
+            delay(350);
+          }
+        }
+
+        if (pellets == 0) {
+          nivel++;
+          score += 300;
+          iniciarNivel();
+        }
+      }
+
+      if (ahora - lastGhostMove >= (unsigned long)velGhost && ahora - faseStart >= 1300) {
+        lastGhostMove = ahora;
+
+        for (int i = 0; i < G; i++) {
+          if (ahora < ghostReleaseAt[i]) continue;
+
+          bool fr = (gEstado[i] == 1) && (ahora < miedoHasta);
+          int dirElegida = escogerDirFantasma(i, fr);
+          gDir[i] = dirElegida;
+          moverPos(gx[i], gy[i], gDir[i]);
+
+          if (gEstado[i] == 2 && gx[i] == gStartX[i] && gy[i] == gStartY[i]) {
+            gEstado[i] = 0;
+          }
+        }
+
+        if (ahora > miedoHasta) {
+          for (int i = 0; i < G; i++) {
+            if (gEstado[i] == 1) gEstado[i] = 0;
+          }
+        }
+
+        bool muerto = false;
+        comprobarColisiones(muerto);
+        if (muerto) {
+          vidas--;
+          if (vidas <= 0) {
+            jugando = false;
+          } else {
+            iniciarNivel();
+            delay(350);
+          }
+        }
+      }
+
+      // --- Render ---
+      char hud[21];
+      snprintf(hud, sizeof(hud), "L%1d LV%02d S%05d", vidas, nivel, score);
+      lcd.setCursor(0, 0);
+      lcd.print("                    ");
+      lcd.setCursor(0, 0);
+      lcd.print(hud);
+      if (frutaActiva) {
+        lcd.setCursor(18, 0);
+        lcd.write(6);
+      } else {
+        lcd.setCursor(18, 0);
+        lcd.write(5);
+      }
+
+      bool bocaAbierta = ((millis() / 120) % 2 == 0);
+      bool parpadeoMiedo = ((millis() / 180) % 2 == 0);
+      bool miedoAcabando = (miedoHasta > 0 && miedoHasta - millis() < 1400);
+
+      for (int y = 0; y < H; y++) {
+        lcd.setCursor(0, y + 1);
+        for (int x = 0; x < W; x++) {
+          bool dibujado = false;
+
+          // Fantasmas
+          for (int g = 0; g < G; g++) {
+            if (gx[g] == x && gy[g] == y) {
+              if (gEstado[g] == 2) lcd.write(7);
+              else if (gEstado[g] == 1) {
+                if (miedoAcabando && parpadeoMiedo) lcd.write(3);
+                else lcd.write(4);
+              } else lcd.write(3);
+              dibujado = true;
+              break;
+            }
+          }
+
+          // Pac-Man
+          if (!dibujado && pacX == x && pacY == y) {
+            if (!bocaAbierta || dirPac == 0 || dirPac == 2) lcd.write(2);
+            else if (dirPac == 1) lcd.write(0);
+            else lcd.write(1);
+            dibujado = true;
+          }
+
+          // Fruta
+          if (!dibujado && frutaActiva && x == frutaX && y == frutaY) {
+            lcd.write(6);
+            dibujado = true;
+          }
+
+          if (!dibujado) {
+            if (mapa[y][x] == 3) lcd.print('#');
+            else if (mapa[y][x] == 2) lcd.print('o');
+            else if (mapa[y][x] == 1) lcd.print('.');
+            else lcd.print(' ');
+          }
+        }
+      }
+
+      delay(18);
+    }
+
+    if (salidaForzada) {
+      transicionBarrido();
+      break;
+    }
+
+    lcd.clear();
+    lcd.setCursor(5, 0); lcd.print("PACMAN OVER");
+    char b1[21];
+    char b2[21];
+    snprintf(b1, sizeof(b1), " SCORE: %05d       ", score);
+    snprintf(b2, sizeof(b2), " LEVEL: %02d        ", nivel);
+    lcd.setCursor(0, 1); lcd.print(b1);
+    lcd.setCursor(0, 2); lcd.print(b2);
+    lcd.setCursor(0, 3); lcd.print("START Exit MENU Retry");
+
+    while (true) {
+      server.handleClient();
+      if (digitalRead(pinStart) == HIGH) {
+        esperarLiberacionBoton(pinStart);
+        reiniciar = false;
+        break;
+      }
+      if (digitalRead(pinMenu) == HIGH) {
+        esperarLiberacionBoton(pinMenu);
+        reiniciar = true;
+        break;
+      }
+      delay(20);
+    }
+  }
+
+  cargarCaracteresBase();
+  transicionBarrido();
+  lcd.clear();
 }
 
 // =========================================================
@@ -1377,7 +2317,7 @@ void jugarSnake() {
     for(int i=0; i<4; i++) strcpy(screen[i], "                    ");
 
     int frame = (t / 150) % 4;
-    char chars1[] = {'|', '/', '-', '\\'};
+    char chars1[] = {'|', '/', '-', 4};
     char chars2[] = {'+', 'x', '*', 'o'};
     
     for(int r = 0; r < 4; r++) {
@@ -1402,13 +2342,37 @@ void jugarSnake() {
 
     for(int i=0; i<4; i++) {
       if (strcmp(screen[i], lastScreen[i]) != 0) {
-        lcd.setCursor(0, i); lcd.print(screen[i]);
+        lcd.setCursor(0, i);
+        for (int j = 0; j < 20; j++) {
+          if (screen[i][j] == 4) {
+            lcd.write(4);
+          } else if (screen[i][j] == (char)255) {
+            lcd.write(255);
+          } else {
+            lcd.print(screen[i][j]);
+          }
+        }
         strcpy(lastScreen[i], screen[i]);
       }
     }
     delay(40);
   }
   lcd.clear();
+
+  // --- Sprites temporales SOLO para Snake ---
+  byte snakeHeadRight[8] = {0b00000, 0b01100, 0b11110, 0b11111, 0b11110, 0b01100, 0b00000, 0b00000};
+  byte snakeHeadLeft[8]  = {0b00000, 0b00110, 0b01111, 0b11111, 0b01111, 0b00110, 0b00000, 0b00000};
+  byte snakeHeadUp[8]    = {0b00000, 0b00100, 0b01110, 0b11111, 0b10101, 0b00100, 0b00000, 0b00000};
+  byte snakeHeadDown[8]  = {0b00000, 0b00100, 0b10101, 0b11111, 0b01110, 0b00100, 0b00000, 0b00000};
+  byte snakeBody[8]      = {0b00000, 0b01110, 0b11111, 0b11111, 0b11111, 0b01110, 0b00000, 0b00000};
+  byte snakeApple[8]     = {0b00100, 0b01010, 0b01110, 0b11111, 0b11111, 0b01110, 0b00100, 0b00000};
+
+  lcd.createChar(0, snakeHeadRight);
+  lcd.createChar(1, snakeHeadLeft);
+  lcd.createChar(2, snakeHeadUp);
+  lcd.createChar(3, snakeHeadDown);
+  lcd.createChar(4, snakeBody);
+  lcd.createChar(5, snakeApple);
 
   // --- BUCLE DE REINTENTO (Para no salir al menú principal si mueres) ---
   bool reiniciar = true;
@@ -1434,23 +2398,46 @@ void jugarSnake() {
     bool playing = true;
     int score = 0;
     bool salidaForzada = false;
+    bool antMenuSnake = digitalRead(pinMenu);
 
-    // Pintar serpiente inicial
-    for(int i = 1; i < snakeLen; i++) {
-      lcd.setCursor(snakeX[i], snakeY[i]);
-      lcd.write(255);
-    }
+    auto dibujarSnakeCompleta = [&]() {
+      lcd.clear();
+      lcd.setCursor(foodX, foodY);
+      lcd.write(5);
+
+      for (int i = snakeLen - 1; i > 0; i--) {
+        lcd.setCursor(snakeX[i], snakeY[i]);
+        lcd.write(4);
+      }
+
+      byte headChar = 0;
+      if (dir == 0) headChar = 2;
+      else if (dir == 1) headChar = 0;
+      else if (dir == 2) headChar = 3;
+      else if (dir == 3) headChar = 1;
+      lcd.setCursor(snakeX[0], snakeY[0]);
+      lcd.write(headChar);
+    };
+
+    // Pintar estado inicial
+    dibujarSnakeCompleta();
 
     // --- BUCLE PRINCIPAL DE LA PARTIDA ---
     while(playing) {
       server.handleClient();
-      
-      // Salida de emergencia en medio del juego dejando pulsado MENU (Corregido a HIGH)
-      if (digitalRead(pinMenu) == HIGH) {
-         esperarLiberacionBoton(pinMenu);
-         salidaForzada = true;
-         break;
+
+      // Pausa del Snake con MENU: START sale, MENU reanuda.
+      bool lecturaMenuSnake = digitalRead(pinMenu);
+      if (lecturaMenuSnake == HIGH && antMenuSnake == LOW) {
+        esperarLiberacionBoton(pinMenu);
+        bool salirSnake = abrirMenuPausa();
+        if (salirSnake) {
+          salidaForzada = true;
+          break;
+        }
+        dibujarSnakeCompleta();
       }
+      antMenuSnake = lecturaMenuSnake;
 
       // Espera Activa del Joystick
       unsigned long tiempoFrame = millis();
@@ -1522,9 +2509,15 @@ void jugarSnake() {
         }
       }
 
-      lcd.setCursor(foodX, foodY); lcd.print("@");
-      lcd.setCursor(oldHeadX, oldHeadY); lcd.write(255); 
-      lcd.setCursor(snakeX[0], snakeY[0]); lcd.print("O"); 
+      lcd.setCursor(foodX, foodY); lcd.write(5);
+      lcd.setCursor(oldHeadX, oldHeadY); lcd.write(4);
+
+      byte headChar = 0;
+      if (dir == 0) headChar = 2;
+      else if (dir == 1) headChar = 0;
+      else if (dir == 2) headChar = 3;
+      else if (dir == 3) headChar = 1;
+      lcd.setCursor(snakeX[0], snakeY[0]); lcd.write(headChar);
     }
 
     if (salidaForzada) break; // Si abortaste, salimos del bucle de reintento
@@ -1606,4 +2599,7 @@ void jugarSnake() {
       delay(20);
     }
   }
+
+  // Restaurar caracteres del resto del sistema al salir del minijuego.
+  cargarCaracteresBase();
 }
