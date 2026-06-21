@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python -c \"import mediapipe; print\\(mediapipe.__version__\\); print\\(dir\\(mediapipe\\)\\)\")"
+    ]
+  }
+}

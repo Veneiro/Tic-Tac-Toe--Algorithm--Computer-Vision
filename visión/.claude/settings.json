@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python --version)",
+      "PowerShell(pip show mediapipe 2>&1)",
+      "PowerShell(pip show ultralytics 2>&1)",
+      "PowerShell(& \"C:\\\\Users\\\\mateo\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python310\\\\python.exe\" -c \"import mediapipe; print\\(mediapipe.__version__\\); import sys; print\\(sys.version\\)\")"
+    ]
+  }
+}
