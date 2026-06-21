@@ -4,6 +4,11 @@
 
 namespace
 {
+  /** @brief Parsea un campo booleano de una cadena JSON sin usar una biblioteca externa.
+   *  @param json  Cadena JSON de origen.
+   *  @param clave Clave del campo a buscar.
+   *  @param valor Salida: valor booleano parseado.
+   *  @return Verdadero si el campo fue encontrado y parseado; falso en caso contrario. */
   bool extraerBoolJson(const String &json, const String &clave, bool &valor)
   {
     String patron = "\"" + clave + "\"";
@@ -18,6 +23,11 @@ namespace
     return false;
   }
 
+  /** @brief Parsea un campo de cadena entre comillas de una cadena JSON sin usar una biblioteca externa.
+   *  @param json  Cadena JSON de origen.
+   *  @param clave Clave del campo cuyo valor de cadena se extrae.
+   *  @param valor Salida: valor de cadena parseado (sin las comillas delimitadoras).
+   *  @return Verdadero si el campo fue encontrado y parseado; falso en caso contrario. */
   bool extraerCadenaJson(const String &json, const String &clave, String &valor)
   {
     String patron = "\"" + clave + "\"";
@@ -43,6 +53,11 @@ namespace
     return true;
   }
 
+  /** @brief Parsea un campo entero de una cadena JSON sin usar una biblioteca externa.
+   *  @param json  Cadena JSON de origen.
+   *  @param clave Clave del campo cuyo valor entero se extrae.
+   *  @param valor Salida: valor entero parseado.
+   *  @return Verdadero si el campo fue encontrado y parseado; falso en caso contrario. */
   bool extraerEnteroJson(const String &json, const String &clave, int &valor)
   {
     String patron = "\"" + clave + "\"";
@@ -79,6 +94,11 @@ namespace
     return true;
   }
 
+  /** @brief Extrae los enteros fila y columna del objeto anidado "movimiento":{} en el JSON.
+   *  @param json    Cadena JSON de origen que contiene un objeto "movimiento".
+   *  @param fila    Salida: índice de fila del movimiento.
+   *  @param columna Salida: índice de columna del movimiento.
+   *  @return Verdadero si ambos campos fueron encontrados y parseados; falso en caso contrario. */
   bool extraerMovimientoJson(const String &json, int &fila, int &columna)
   {
     String patron = "\"movimiento\"";
@@ -105,6 +125,7 @@ namespace
   }
 }
 
+/** @brief Inicia una conexión WiFi STA no bloqueante usando el ssid y la contraseña configurados. */
 void connectToWiFi()
 {
   Serial.print("Conectando a WiFi: ");
@@ -114,6 +135,11 @@ void connectToWiFi()
   WiFi.begin(ssid, password);
 }
 
+/** @brief Parsea n enteros de una cadena separada por comas en arr[].
+ *  @param src Cadena de origen que contiene tokens enteros separados por comas.
+ *  @param arr Array de salida para almacenar los valores parseados.
+ *  @param n   Número de enteros esperados.
+ *  @return Verdadero si se parsearon exactamente n enteros; falso en caso contrario. */
 bool parsearVector(const String &src, int *arr, int n)
 {
   int count = 0;
@@ -136,6 +162,9 @@ bool parsearVector(const String &src, int *arr, int n)
   return (count == n);
 }
 
+/** @brief Parsea 9 enteros de una cadena de tablero y rellena la matriz global tablero[][].
+ *  @param input Cadena que contiene exactamente 9 tokens de dígitos (0–2) en orden fila-mayor.
+ *  @return Verdadero si se parsearon exactamente 9 valores y se rellenó la matriz; falso en caso contrario. */
 bool parseBoardToMatrix(const String &input)
 {
   int values[9];
@@ -180,6 +209,8 @@ bool parseBoardToMatrix(const String &input)
   return true;
 }
 
+/** @brief Envía por HTTP POST el tablero[][] actual como matriz JSON al endpoint /movimiento de la Raspberry Pi.
+ *  @return Verdadero si la solicitud se envió y el servidor respondió con un código HTTP positivo; falso en caso contrario. */
 bool sendMatrixToRaspberry()
 {
   String matrizJson = "[";
@@ -232,6 +263,8 @@ bool sendMatrixToRaspberry()
   return false;
 }
 
+/** @brief Envía un HTTP POST al endpoint /capturar de la ESP32-CAM para disparar una captura de foto.
+ *  @return Verdadero si la cámara confirmó la solicitud (HTTP 2xx); falso en caso de error. */
 bool solicitarCapturaCamara()
 {
   HTTPClient http;
@@ -269,6 +302,7 @@ bool solicitarCapturaCamara()
   return true;
 }
 
+/** @brief Manejador GET /pedir-foto del WebServer: llama a solicitarCapturaCamara y devuelve el resultado como texto plano. */
 void handlePedirFoto()
 {
   if (solicitarCapturaCamara())
@@ -280,6 +314,9 @@ void handlePedirFoto()
   server.send(500, "text/plain", "Error al solicitar captura a la ESP32-CAM");
 }
 
+/** @brief Parsea el payload JSON completo recibido de la cámara, actualiza el estado del tablero,
+ *  ordena al robot que se mueva y refresca el LCD.
+ *  @param entrada Cadena JSON que contiene "tablero", "movimiento", arrays de piezas laterales y banderas. */
 void procesarEntradaTablero(const String &entrada)
 {
   int tableroSnapshot[3][3];
@@ -385,6 +422,8 @@ void procesarEntradaTablero(const String &entrada)
   sendMatrixToRaspberry();
 }
 
+/** @brief Manejador POST /tablero del WebServer: valida el estado de la partida y encola el JSON del tablero recibido.
+ *  Rechaza las solicitudes si la partida no está en modo automático, no está en curso o no es el turno del robot. */
 void handleTablero()
 {
   if (!server.hasArg("plain"))
@@ -417,11 +456,14 @@ void handleTablero()
   server.send(200, "text/plain", "OK - tablero recibido");
 }
 
+/** @brief Manejador GET / del WebServer: devuelve una cadena de estado que confirma que el ESP32-S3 está listo. */
 void handleRoot()
 {
   server.send(200, "text/plain", "ESP32-S3 fusion listo. Usa POST /tablero o GET /pedir-foto");
 }
 
+/** @brief Envía un HTTP POST al endpoint /verificar de la ESP32-CAM para solicitar la verificación del tablero.
+ *  @return Verdadero si la solicitud se envió correctamente; falso en caso de error de conexión o HTTP. */
 bool solicitarVerificacion()
 {
   String url = String(esp32CamURL);
@@ -453,6 +495,8 @@ bool solicitarVerificacion()
   return true;
 }
 
+/** @brief Manejador POST /verificar_resultado del WebServer: parsea los booleanos "listo", "tablero_limpio" y
+ *  "mano_en_tablero" del cuerpo JSON y actualiza las banderas globales de verificación. */
 void handleVerificarResultado()
 {
   if (!server.hasArg("plain"))
@@ -495,7 +539,4 @@ void handleVerificarResultado()
   server.send(200, "text/plain", "OK");
 }
 
-// =========================================================
-// EASTER EGG: MODO PACMAN
-// =========================================================
 

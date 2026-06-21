@@ -3,12 +3,19 @@
 #include "kinematics.h"
 #include "gripper.h"
 
+/** @brief Convierte las lecturas crudas de los encoders a ángulos articulares usando puntos de referencia de calibración.
+ *  Rellena my_robot.q (q1, q2, q3) llamando a fromEncoderFrameGeneral para cada articulación. */
 void computeJointsAngle(void){
   my_robot.q.q1 = fromEncoderFrameGeneral(joint_encoder[0],encoder_referencia_calibracion[0],joint_referencia_calibracion[0],false);
   my_robot.q.q2 = fromEncoderFrameGeneral(joint_encoder[1],encoder_referencia_calibracion[1],joint_referencia_calibracion[1],false);
   my_robot.q.q3 = fromEncoderFrameGeneral(joint_encoder[2],encoder_referencia_calibracion[2],joint_referencia_calibracion[2],true);
 }
 
+/** @brief Convierte un ángulo articular al marco del encoder usando un desplazamiento simple.
+ *  @param q_art          Ángulo articular (en espacio de juntas) en grados.
+ *  @param q0             Desplazamiento del encoder (referencia de cero).
+ *  @param invertDirection Si es verdadero, niega la relación (el encoder gira al revés).
+ *  @return Ángulo en el marco del encoder. */
 float toEncoderFrame(float q_art, float q0, bool invertDirection){
     float q_enc;
 
@@ -20,6 +27,11 @@ float toEncoderFrame(float q_art, float q0, bool invertDirection){
     return q_enc;
 }
 
+/** @brief Inversa de toEncoderFrame: convierte un ángulo en el marco del encoder a ángulo articular.
+ *  @param q_enc          Ángulo en el marco del encoder.
+ *  @param q0             Desplazamiento del encoder (referencia de cero).
+ *  @param invertDirection Si es verdadero, niega la relación.
+ *  @return Ángulo articular en grados. */
 float fromEncoderFrame(float q_enc, float q0, bool invertDirection){
     float q_art;
 
@@ -31,6 +43,13 @@ float fromEncoderFrame(float q_enc, float q0, bool invertDirection){
     return q_art;
 }
 
+/** @brief Conversión general por punto de referencia de ángulo articular al marco del encoder.
+ *  Usa un par de calibración conocido (encoder, articular) en lugar de un simple desplazamiento.
+ *  @param q_art          Ángulo articular a convertir.
+ *  @param E_ref          Lectura del encoder en la pose de referencia de calibración.
+ *  @param A_ref          Ángulo articular en la pose de referencia de calibración.
+ *  @param invertDirection Si es verdadero, el encoder gira en dirección opuesta.
+ *  @return Ángulo correspondiente en el marco del encoder. */
 float toEncoderFrameGeneral(float q_art, float E_ref, float A_ref, bool invertDirection){
     float delta_art = q_art - A_ref;
     float q_enc;
@@ -43,6 +62,12 @@ float toEncoderFrameGeneral(float q_art, float E_ref, float A_ref, bool invertDi
     return q_enc;
 }
 
+/** @brief Inversa de toEncoderFrameGeneral: convierte un ángulo del encoder a ángulo articular.
+ *  @param q_enc          Ángulo en el marco del encoder a convertir.
+ *  @param E_ref          Lectura del encoder en la pose de referencia de calibración.
+ *  @param A_ref          Ángulo articular en la pose de referencia de calibración.
+ *  @param invertDirection Si es verdadero, el encoder gira en dirección opuesta.
+ *  @return Ángulo articular correspondiente. */
 float fromEncoderFrameGeneral(float q_enc, float E_ref, float A_ref, bool invertDirection){
     float delta_enc = q_enc - E_ref;
     float q_art;
@@ -55,6 +80,11 @@ float fromEncoderFrameGeneral(float q_enc, float E_ref, float A_ref, bool invert
     return q_art;
 }
 
+/** @brief Limita x al intervalo cerrado [minVal, maxVal].
+ *  @param x      Valor a limitar.
+ *  @param minVal Límite inferior.
+ *  @param maxVal Límite superior.
+ *  @return Valor limitado. */
 float truncate(float x, float minVal, float maxVal){
     if (x < minVal)
         return minVal;
@@ -63,6 +93,10 @@ float truncate(float x, float minVal, float maxVal){
     return x;
 }
 
+/** @brief Calcula la cinemática inversa planar de 3 GDL para el brazo robótico.
+ *  @param targetPos Posición cartesiana deseada del efector final (x, y, z).
+ *  @return IKResult que contiene los ángulos articulares (q1, q2, q3), la bandera hasSolution
+ *          y la bandera withinLimits. Si no existe solución, ambas banderas son falsas. */
 IKResult inverseKinematics(LinearPosition targetPos){
     float X = targetPos.x;
     float Y = targetPos.y;
@@ -109,6 +143,8 @@ IKResult inverseKinematics(LinearPosition targetPos){
     return resultado;
 }
 
+/** @brief Calcula la cinemática directa y actualiza my_robot.p a partir de my_robot.q.
+ *  Usa el modelo geométrico con las longitudes de eslabón L1, L2, L3 para obtener (x, y, z). */
 void forwardKinematics(void){
 
     float q1 = deg2rad(my_robot.q.q1);
@@ -127,14 +163,21 @@ void forwardKinematics(void){
     my_robot.p.z = Z;
 }
 
+/** @brief Convierte grados a radianes.
+ *  @param deg Ángulo en grados.
+ *  @return Ángulo en radianes. */
 float deg2rad(float deg){
     return deg * PI / 180.0;
 }
 
+/** @brief Convierte radianes a grados.
+ *  @param rad Ángulo en radianes.
+ *  @return Ángulo en grados. */
 float rad2deg(float rad){
     return rad * 180.0 / PI;
 }
 
+/** @brief Imprime los ángulos articulares actuales q1, q2, q3 por Serial para depuración. */
 void printJoints(void){
     Serial.print(" q1:");
     Serial.print(my_robot.q.q1);
@@ -144,6 +187,7 @@ void printJoints(void){
     Serial.println(my_robot.q.q3);
 }
 
+/** @brief Imprime la posición cartesiana actual del efector final (x, y, z) por Serial. */
 void printPosition(void){
     Serial.print(" x:");
     Serial.print(my_robot.p.x);
@@ -153,6 +197,7 @@ void printPosition(void){
     Serial.println(my_robot.p.z);
 }
 
+/** @brief Imprime la target_position actual (SP_x, SP_y, SP_z) por Serial. */
 void printSetPointPosition(void){
     Serial.print(" SP_x:");
     Serial.print(target_position.x);
@@ -162,6 +207,7 @@ void printSetPointPosition(void){
     Serial.println(target_position.z);
 }
 
+/** @brief Imprime el target_angle actual (SP_q1, SP_q2, SP_q3) por Serial. */
 void printSetPointJoints(void){
     Serial.print(" SP_q1:");
     Serial.print(target_angle.q1);
@@ -171,6 +217,10 @@ void printSetPointJoints(void){
     Serial.println(target_angle.q3);
 }
 
+/** @brief Ejecuta una trayectoria Hermite para aproximarse y descender al punto de recogida.
+ *  Dos segmentos: pose actual → encima del punto de recogida (z_elevacion) → punto de recogida (z_trabajo).
+ *  Bloquea hasta que la trayectoria se completa.
+ *  @param P_pick Posición cartesiana objetivo de la pieza a recoger. */
 void pick(LinearPosition P_pick){
     LinearPosition P0 = my_robot.p;
     LinearPosition P1 = {P_pick.x, P_pick.y, z_elevacion};
@@ -211,6 +261,10 @@ void pick(LinearPosition P_pick){
     printSetPointPosition();
 }
 
+/** @brief Ejecuta una trayectoria Hermite para elevar, desplazarse y descender al punto de colocación.
+ *  Tres segmentos: elevación → desplazamiento sobre el objetivo → descenso a la altura de colocación (z_trabajo).
+ *  Bloquea hasta que la trayectoria se completa.
+ *  @param P_place Posición cartesiana objetivo donde se debe colocar la pieza. */
 void place(LinearPosition P_place){
     LinearPosition P0 = my_robot.p;
     LinearPosition P1 = {my_robot.p.x, my_robot.p.y, z_elevacion};
@@ -257,6 +311,9 @@ void place(LinearPosition P_place){
     printSetPointPosition();
 }
 
+/** @brief Ejecuta una trayectoria Hermite para devolver el brazo a la posición de inicio.
+ *  Dos segmentos: elevación desde la pose actual → desplazamiento a home_position.
+ *  Bloquea hasta que la trayectoria se completa. */
 void returnHome(void){
     LinearPosition P0 = my_robot.p;
     LinearPosition P1 = {my_robot.p.x, my_robot.p.y, z_elevacion};
@@ -297,6 +354,9 @@ void returnHome(void){
     printSetPointPosition();
 }
 
+/** @brief Ejecuta la secuencia completa de recogida y colocación: pick → closeGripper → place → openGripper → returnHome.
+ *  @param P_pick  Posición cartesiana de la pieza a recoger.
+ *  @param P_place Posición cartesiana donde se debe colocar la pieza. */
 void pickAndPlace(LinearPosition P_pick, LinearPosition P_place){
     pick(P_pick);
     delay(1000);
@@ -318,6 +378,7 @@ void pickAndPlace(LinearPosition P_pick, LinearPosition P_place){
     printPosition();
 }
 
+/** @brief Rutina de prueba: recoge secuencialmente cada una de las 5 piezas y regresa a inicio tras cada recogida. */
 void test1(void){
     for(int i=0;i<5;i++){
         pick(array_piezas[i]);
@@ -332,6 +393,8 @@ void test1(void){
     }
 }
 
+/** @brief Rutina de prueba: recoge cada una de las 5 piezas y las coloca en las 9 celdas del tablero,
+ *  luego regresa a inicio. */
 void test2(void){
     for(int i=0;i<5;i++){
         pick(array_piezas[i]);

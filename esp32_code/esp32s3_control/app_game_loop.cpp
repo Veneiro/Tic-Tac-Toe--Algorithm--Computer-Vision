@@ -4,6 +4,9 @@
 // Helpers para la pantalla de verificación de tablero
 // ─────────────────────────────────────────────────────────
 
+/** @brief Muestra en el LCD el mensaje de estado adecuado para la verificación del tablero según las banderas actuales.
+ *  Muestra mensajes distintos para: mano detectada + tablero sucio, solo mano,
+ *  solo tablero sucio, o un mensaje genérico de "comprobando" mientras se espera el primer resultado. */
 static void _lcdVerificacionMensaje()
 {
   LCD_LOCK();
@@ -38,6 +41,8 @@ static void _lcdVerificacionMensaje()
   LCD_UNLOCK();
 }
 
+/** @brief Bucle bloqueante: envía peticiones /verificar repetidamente hasta que el tablero esté limpio
+ *  y no se detecte ninguna mano. Muestra el estado de verificación en el LCD y reintenta en caso de tiempo de espera agotado o error de red. */
 void esperarTableroLimpio()
 {
   const unsigned long TIMEOUT_MS  = 9000;  // tiempo máx. esperando respuesta de cámara
@@ -118,6 +123,10 @@ void esperarTableroLimpio()
   delay(1000);
 }
 
+/** @brief Bucle principal de juego: orquesta el modo automático (visión + robot) y el modo manual (joystick).
+ *  En modo automático, gestiona la alternancia de turnos, las solicitudes de captura de cámara, el procesamiento del tablero,
+ *  la escalada de música de jefe final y el menú de pausa. En modo manual, mapea la entrada del joystick
+ *  a la velocidad del efector final y gestiona la activación de la pinza mediante el botón START. */
 void ejecutarPartida1()
 {
   vaciarTablero();
@@ -285,9 +294,6 @@ void ejecutarPartida1()
   }
   else
   {
-    // ======================================================
-    // MODO MANUAL (Con cambio a eje Z)
-    // ======================================================
     setSemaforo(false, true, false);
 
     lcd.clear();

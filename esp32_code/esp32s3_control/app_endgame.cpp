@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Gestiona el fin de partida: reproduce la canción de victoria/derrota/empate, muestra una animación
+ *  de fuegos artificiales en el LCD con el texto del resultado en modo máquina de escribir y luego muestra la pantalla final "MATCH ENDED".
+ *  @param ganador Código de resultado: 1 = gana el humano, 2 = gana el robot, 3 = empate; valores fuera de [1,3] no tienen efecto. */
 void manejarFinDeJuego(int ganador)
 {
   if (ganador >= 1 && ganador <= 3)

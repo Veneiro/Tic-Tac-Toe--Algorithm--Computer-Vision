@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Minijuego Easter-egg Pac-Man: bucle de juego completo con renderizado en LCD, entrada del joystick,
+ *  IA de fantasmas en modo dispersión/persecución, píldoras de poder, bonificaciones de fruta, puntuación y pantalla de reintento.
+ *  Restaura los caracteres base del LCD y ejecuta una transición de barrido al salir. */
 void jugarPacman() {
   lcd.clear();
 
@@ -577,10 +580,4 @@ void jugarPacman() {
   lcd.clear();
 }
 
-// =========================================================
-// EASTER EGG: MODO SNAKE (VERSIÓN MEJORADA)
-// =========================================================
-// =========================================================
-// EASTER EGG: MODO SNAKE (ANIMACIONES + LÓGICA ORIGINAL)
-// =========================================================
 

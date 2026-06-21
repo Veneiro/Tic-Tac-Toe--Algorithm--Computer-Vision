@@ -2,8 +2,6 @@
 #include "config.h"
 #include "gripper.h"
 
-// ===================== CONFIGURACIÓN DE PINZA =====================
-
 const int GRIPPER_OPEN_US  = 1200;
 const int GRIPPER_CLOSE_US = 1905;
 
@@ -17,8 +15,10 @@ static int gripperPulseUs = GRIPPER_OPEN_US;
 static bool gripperEnabled     = false;
 static bool gripperInitialized = false;
 
-// ===================== FUNCIONES INTERNAS =====================
-
+/** @brief Convierte un ancho de pulso del servo en microsegundos a un ciclo de trabajo LEDC de 14 bits.
+ *  Asume una señal de 50 Hz (periodo de 20 000 µs). La entrada se limita a [500, 2500] µs.
+ *  @param pulseUs Ancho de pulso deseado en microsegundos.
+ *  @return Valor de ciclo de trabajo LEDC para el canal de 14 bits. */
 static uint32_t pulseUsToDuty(int pulseUs)
 {
     pulseUs = constrain(pulseUs, 500, 2500);
@@ -29,14 +29,17 @@ static uint32_t pulseUsToDuty(int pulseUs)
     return (uint32_t)((pulseUs / 20000.0f) * maxDuty);
 }
 
+/** @brief Fuerza PIN_GRIPPER a nivel bajo como salida digital para establecer un estado seguro antes de inicializar LEDC. */
 static void forceGripperPinLow()
 {
     pinMode(PIN_GRIPPER, OUTPUT);
     digitalWrite(PIN_GRIPPER, LOW);
 }
 
-// ===================== CONTROL DE ACTIVACIÓN =====================
 
+/** @brief Conecta el canal LEDC 2 (una sola vez) y habilita la salida del servo.
+ *  Escribe el último ciclo de trabajo conocido para que el servo se mueva a su posición almacenada.
+ *  @return Verdadero si el servo se habilitó correctamente; falso si falló la conexión LEDC. */
 bool enableGripperServo()
 {
     if (gripperEnabled) return true;
@@ -69,6 +72,8 @@ bool enableGripperServo()
     return true;
 }
 
+/** @brief Establece el ciclo de trabajo LEDC a 0, silenciando el servo sin desconectar el canal LEDC.
+ *  Esto evita una condición de carrera entre núcleos con la tarea del buzzer en el núcleo 0. */
 void disableGripperServo()
 {
     if (!gripperEnabled)
@@ -87,13 +92,15 @@ void disableGripperServo()
     gripperEnabled = false;
 }
 
+/** @brief Devuelve si el servo de la pinza está actualmente habilitado (emitiendo señal PWM).
+ *  @return Verdadero si el servo está habilitado; falso en caso contrario. */
 bool isGripperEnabled()
 {
     return gripperEnabled;
 }
 
-// ===================== INICIALIZACIÓN =====================
 
+/** @brief Inicializa la pinza: habilita el servo, la abre, mantiene brevemente la posición y luego la deshabilita. */
 void beginGripper()
 {
     Serial.println("beginGripper LEDC: inicio");
@@ -111,8 +118,10 @@ void beginGripper()
     Serial.println("beginGripper LEDC: fin");
 }
 
-// ===================== MOVIMIENTO POR PULSO =====================
 
+/** @brief Mueve la pinza inmediatamente al ancho de pulso especificado.
+ *  Habilita el servo si actualmente está deshabilitado.
+ *  @param pulseUs Ancho de pulso objetivo en microsegundos (limitado a [500, 2500]). */
 void moveGripperPulse(int pulseUs)
 {
     pulseUs = constrain(pulseUs, 500, 2500);
@@ -130,6 +139,9 @@ void moveGripperPulse(int pulseUs)
     ledcWrite(PIN_GRIPPER, duty);
 }
 
+/** @brief Desplaza la pinza desde su posición actual hasta el objetivo en pasos de 10 µs cada 10 ms.
+ *  Habilita el servo automáticamente si no está activo.
+ *  @param targetPulseUs Ancho de pulso final deseado en microsegundos (limitado a [500, 2500]). */
 void moveGripperSmoothPulse(int targetPulseUs)
 {
     targetPulseUs = constrain(targetPulseUs, 500, 2500);
@@ -159,18 +171,20 @@ void moveGripperSmoothPulse(int targetPulseUs)
     moveGripperPulse(targetPulseUs);
 }
 
-// ===================== FUNCIONES BÁSICAS =====================
 
+/** @brief Mueve la pinza inmediatamente a la posición completamente abierta (GRIPPER_OPEN_US). */
 void openGripper()
 {
     moveGripperPulse(GRIPPER_OPEN_US);
 }
 
+/** @brief Mueve la pinza inmediatamente a la posición completamente cerrada (GRIPPER_CLOSE_US). */
 void closeGripper()
 {
     moveGripperPulse(GRIPPER_CLOSE_US);
 }
 
+/** @brief Habilita el servo y mueve la pinza suavemente a la posición completamente abierta. */
 void openGripperSmooth()
 {
     if (!enableGripperServo())
@@ -181,6 +195,7 @@ void openGripperSmooth()
     moveGripperSmoothPulse(GRIPPER_OPEN_US);
 }
 
+/** @brief Habilita el servo y mueve la pinza suavemente a la posición completamente cerrada. */
 void closeGripperSmooth()
 {
     if (!enableGripperServo())
@@ -191,8 +206,8 @@ void closeGripperSmooth()
     moveGripperSmoothPulse(GRIPPER_CLOSE_US);
 }
 
-// ===================== FUNCIONES CON DETACH =====================
 
+/** @brief Cierra la pinza suavemente, mantiene durante GRIPPER_HOLD_CLOSE_MS y luego deshabilita el servo. */
 void closeGripperAndRelease()
 {
     if (!enableGripperServo())
@@ -208,6 +223,7 @@ void closeGripperAndRelease()
     disableGripperServo();
 }
 
+/** @brief Abre la pinza suavemente, mantiene durante GRIPPER_HOLD_OPEN_MS y luego deshabilita el servo. */
 void openGripperAndRelease()
 {
     if (!enableGripperServo())
@@ -223,13 +239,15 @@ void openGripperAndRelease()
     disableGripperServo();
 }
 
+/** @brief Alias de openGripperAndRelease: abre la pinza desde un estado liberado (servo apagado). */
 void openGripperFromReleased()
 {
     openGripperAndRelease();
 }
 
-// ===================== CONSULTA =====================
 
+/** @brief Devuelve el ancho de pulso actual de la pinza en microsegundos.
+ *  @return Último ancho de pulso establecido (µs), que refleja la posición actual o última del servo. */
 int getGripperPulseUs()
 {
     return gripperPulseUs;

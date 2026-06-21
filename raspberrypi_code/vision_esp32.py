@@ -53,10 +53,6 @@ except ImportError:
     print('[WARN] ultralytics no instalado — inferencia local no disponible')
 
 
-# ──────────────────────────────────────────────
-# Configuración
-# ──────────────────────────────────────────────
-
 ROBOFLOW_API_KEY  = 'C6jJ9kSIF8VRiJWR3rFE'
 ROBOFLOW_MODEL_ID = 'misovos/7'
 
@@ -91,10 +87,6 @@ DEFAULT_PORT  = 5000
 T_SOFTMAX    = 0.5
 SEARCH_DEPTH = 2
 
-# ──────────────────────────────────────────────
-# Colores BGR
-# ──────────────────────────────────────────────
-
 CLASS_COLORS: dict = {
     'red cross':   (40,  40,  220),
     'blue circle': (220, 120,  30),
@@ -125,12 +117,6 @@ HAND_CONNECTIONS = [
 ]
 FINGERTIP_IDS = {4, 8, 12, 16, 20}
 
-# ──────────────────────────────────────────────
-# Detección de gestos
-# ──────────────────────────────────────────────
-
-# Gestos reconocidos por el GestureRecognizer estándar de MediaPipe:
-#   None, Closed_Fist, Open_Palm, Pointing_Up, Thumb_Down, Thumb_Up, Victory, ILoveYou
 GESTO_COLORES: dict = {
     'Closed_Fist': ( 50,  50, 200),   # azul oscuro  — puño cerrado
     'Open_Palm':   ( 40, 200,  40),   # verde         — palma abierta
@@ -160,16 +146,27 @@ def get_gestos(mp_result) -> list:
     return gestos
 
 
-# ──────────────────────────────────────────────
-# Helpers de dibujo
-# ──────────────────────────────────────────────
-
 def draw_fps(frame, fps: float) -> None:
+    """
+    Dibuja el contador de FPS en la esquina superior izquierda del frame.
+
+    Args:
+        frame (np.ndarray): Imagen BGR sobre la que se dibuja.
+        fps (float): Valor de fotogramas por segundo a mostrar.
+    """
     cv2.putText(frame, f'FPS: {fps:.1f}', (10, 34),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, C_FPS, 2, cv2.LINE_AA)
 
 
 def draw_status(frame, show_det: bool, show_mp: bool) -> None:
+    """
+    Dibuja en la parte inferior del frame el estado de los toggles de detección y MediaPipe.
+
+    Args:
+        frame (np.ndarray): Imagen BGR sobre la que se dibuja.
+        show_det (bool): True si la detección YOLO/Roboflow está activa.
+        show_mp (bool): True si MediaPipe está activo.
+    """
     h = frame.shape[0]
     text = (f'[y] Detección: {"ON " if show_det else "OFF"}   '
             f'[m] MediaPipe: {"ON " if show_mp else "OFF"}   '
@@ -179,7 +176,14 @@ def draw_status(frame, show_det: bool, show_mp: bool) -> None:
 
 
 def roboflow_infer(frame) -> list:
-    """Envía un frame a la REST API de Roboflow y devuelve las predicciones."""
+    """
+    Envía un frame a la REST API de Roboflow y devuelve las predicciones.
+
+    Args:
+        frame (np.ndarray): Imagen BGR de entrada.
+    Returns:
+        list[dict]: Lista de predicciones con claves 'class', 'x', 'y', 'width', 'height', 'confidence'.
+    """
     h, w = frame.shape[:2]
     if w > INFER_WIDTH:
         scale = INFER_WIDTH / w
@@ -211,7 +215,16 @@ def roboflow_infer(frame) -> list:
 
 
 def yolo_infer(frame) -> list:
-    """Inferencia local con YOLO. Devuelve predicciones en el mismo formato que roboflow_infer."""
+    """
+    Ejecuta inferencia local con el modelo YOLO cargado desde LOCAL_MODEL_PATH.
+
+    Args:
+        frame (np.ndarray): Imagen BGR de entrada.
+    Returns:
+        list[dict]: Lista de predicciones con claves 'class', 'x', 'y', 'width', 'height', 'confidence'.
+    Raises:
+        RuntimeError: Si ultralytics no está instalado.
+    """
     global _yolo_model
     if _yolo_model is None:
         if not TIENE_ULTRALYTICS:
@@ -240,13 +253,28 @@ def yolo_infer(frame) -> list:
 
 
 def infer(frame) -> list:
-    """Dispatcher: usa YOLO local si USE_LOCAL_MODEL=True, si no llama a Roboflow."""
+    """
+    Dispatcher de inferencia: usa YOLO local o Roboflow según USE_LOCAL_MODEL.
+
+    Args:
+        frame (np.ndarray): Imagen BGR de entrada.
+    Returns:
+        list[dict]: Lista de predicciones unificada.
+    """
     if USE_LOCAL_MODEL:
         return yolo_infer(frame)
     return roboflow_infer(frame)
 
 
 def draw_detections(frame, predictions: list, show_conf: bool = True) -> None:
+    """
+    Dibuja los bounding boxes y etiquetas de clase sobre el frame.
+
+    Args:
+        frame (np.ndarray): Imagen BGR sobre la que se dibuja.
+        predictions (list[dict]): Lista de predicciones del modelo de detección.
+        show_conf (bool): Si True, incluye la confianza en la etiqueta. Por defecto True.
+    """
     for pred in predictions:
         cls_name = pred['class']
         conf     = pred['confidence']
@@ -275,6 +303,13 @@ def draw_detections(frame, predictions: list, show_conf: bool = True) -> None:
 
 
 def draw_hand_landmarks(frame, mp_result) -> None:
+    """
+    Dibuja los landmarks de mano, conexiones, etiqueta de lateralidad y gesto reconocido.
+
+    Args:
+        frame (np.ndarray): Imagen BGR sobre la que se dibuja.
+        mp_result: Resultado de GestureRecognizer de MediaPipe (puede ser None).
+    """
     if not mp_result or not mp_result.hand_landmarks:
         return
     h, w = frame.shape[:2]
@@ -313,11 +348,16 @@ def draw_hand_landmarks(frame, mp_result) -> None:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
 
 
-# ──────────────────────────────────────────────
-# Análisis del tablero
-# ──────────────────────────────────────────────
-
 def _inside(piece: dict, cell: dict) -> bool:
+    """
+    Comprueba si el centro de una pieza está dentro del bounding box de una celda.
+
+    Args:
+        piece (dict): Predicción de la pieza con claves 'x', 'y'.
+        cell (dict): Celda con claves 'x', 'y', 'width', 'height'.
+    Returns:
+        bool: True si el centro de la pieza cae dentro de la celda.
+    """
     x1 = cell['x'] - cell['width']  / 2
     y1 = cell['y'] - cell['height'] / 2
     x2 = cell['x'] + cell['width']  / 2
@@ -326,6 +366,14 @@ def _inside(piece: dict, cell: dict) -> bool:
 
 
 def _grid_bbox(cells: list):
+    """
+    Calcula el bounding box que envuelve todas las celdas detectadas.
+
+    Args:
+        cells (list[dict]): Lista de predicciones de clase 'cells'.
+    Returns:
+        tuple[float, float, float, float]: (x1, y1, x2, y2) del bounding box envolvente.
+    """
     xs1 = [c['x'] - c['width']  / 2 for c in cells]
     ys1 = [c['y'] - c['height'] / 2 for c in cells]
     xs2 = [c['x'] + c['width']  / 2 for c in cells]
@@ -533,6 +581,17 @@ def analyze_board(predictions: list):
 
 
 def hand_over_board(mp_result, predictions: list, frame_w: int, frame_h: int) -> bool:
+    """
+    Detecta si algún landmark de mano se encuentra sobre el área del tablero.
+
+    Args:
+        mp_result: Resultado de GestureRecognizer de MediaPipe.
+        predictions (list[dict]): Lista de predicciones del modelo.
+        frame_w (int): Ancho del frame en píxeles.
+        frame_h (int): Alto del frame en píxeles.
+    Returns:
+        bool: True si al menos un landmark de mano está dentro del área del tablero.
+    """
     if not mp_result or not mp_result.hand_landmarks:
         return False
     cells  = [p for p in predictions if p['class'] == 'cells']
@@ -555,6 +614,16 @@ def hand_over_board(mp_result, predictions: list, frame_w: int, frame_h: int) ->
 
 
 def print_board(matrix, left, right, n_red_fuera, n_blue_fuera) -> None:
+    """
+    Imprime el estado del tablero en consola con formato de cuadrícula ASCII.
+
+    Args:
+        matrix (list[list[int]]): Matriz 3x3 con el estado del tablero (0=vacío, 1=rojo, 2=azul).
+        left (list[int]): Array de 5 slots del lateral izquierdo.
+        right (list[int]): Array de 5 slots del lateral derecho.
+        n_red_fuera (int): Número de fichas rojas fuera del tablero y los laterales.
+        n_blue_fuera (int): Número de fichas azules fuera del tablero y los laterales.
+    """
     sym = {1: ' 1 ', 2: ' 2 ', 0: ' 0 '}
     print('left:  ' + str(left))
     print('right: ' + str(right))
@@ -566,10 +635,6 @@ def print_board(matrix, left, right, n_red_fuera, n_blue_fuera) -> None:
         print(f'Fuera del tablero → red: {n_red_fuera}  blue: {n_blue_fuera}')
     print()
 
-
-# ──────────────────────────────────────────────
-# Conversión al formato tablero={} para Flask
-# ──────────────────────────────────────────────
 
 def _resultado_a_json(matrix, left, right, n_red_fuera, n_blue_fuera) -> dict:
     """
@@ -591,11 +656,6 @@ def _resultado_a_json(matrix, left, right, n_red_fuera, n_blue_fuera) -> dict:
     }
 
 
-# ──────────────────────────────────────────────
-# Lógica IA  (minimax α-β + posición + libro de aperturas)
-# ──────────────────────────────────────────────
-
-# Bonus posicional: centro domina 4 líneas, esquinas 3, bordes 2
 _POS_BONUS = np.array([
     [0.3, 0.1, 0.3],
     [0.1, 0.5, 0.1],
@@ -604,10 +664,27 @@ _POS_BONUS = np.array([
 
 
 def possible_moves_numeric(board: np.ndarray) -> list:
+    """
+    Devuelve la lista de celdas vacías del tablero.
+
+    Args:
+        board (np.ndarray): Matriz 3x3 con el estado del tablero (0=vacío, 1=jugador, 2=robot).
+    Returns:
+        list[tuple[int,int]]: Lista de coordenadas (fila, columna) de las celdas libres.
+    """
     return [(i, j) for i in range(3) for j in range(3) if board[i, j] == 0]
 
 
 def evaluate_numeric(board: np.ndarray) -> float:
+    """
+    Evalúa el estado del tablero desde la perspectiva del robot (jugador 2).
+
+    Args:
+        board (np.ndarray): Matriz 3x3 con el estado del tablero.
+    Returns:
+        float: Puntuación positiva si favorece al robot, negativa si favorece al jugador.
+               ±100 indica victoria inmediata.
+    """
     lineas = (
         list(board)
         + list(board.T)
@@ -631,6 +708,18 @@ def evaluate_numeric(board: np.ndarray) -> float:
 
 def minimax_numeric(board: np.ndarray, depth: int, maximizing: bool,
                     alpha: float = -np.inf, beta: float = np.inf) -> float:
+    """
+    Algoritmo minimax con poda alfa-beta para seleccionar el mejor movimiento.
+
+    Args:
+        board (np.ndarray): Matriz 3x3 con el estado actual del tablero.
+        depth (int): Profundidad máxima de búsqueda restante.
+        maximizing (bool): True si es el turno del robot (maximizar), False si es el del jugador.
+        alpha (float): Cota inferior para la poda alfa-beta.
+        beta (float): Cota superior para la poda alfa-beta.
+    Returns:
+        float: Puntuación del estado del tablero al final del árbol de búsqueda.
+    """
     score = evaluate_numeric(board)
     if abs(score) >= 100 or depth == 0:
         return score
@@ -655,6 +744,15 @@ def minimax_numeric(board: np.ndarray, depth: int, maximizing: bool,
 
 
 def evaluate_moves_numeric(board: np.ndarray, depth: int):
+    """
+    Evalúa todos los movimientos posibles del robot con minimax y devuelve sus puntuaciones.
+
+    Args:
+        board (np.ndarray): Matriz 3x3 con el estado actual del tablero.
+        depth (int): Profundidad de búsqueda para minimax.
+    Returns:
+        tuple[list, np.ndarray]: Lista de movimientos y array de puntuaciones correspondientes.
+    """
     moves = possible_moves_numeric(board)
     scores = []
     for i, j in moves:
@@ -664,6 +762,15 @@ def evaluate_moves_numeric(board: np.ndarray, depth: int):
 
 
 def softmax(scores: np.ndarray, temperature: float = T_SOFTMAX) -> np.ndarray:
+    """
+    Calcula la distribución softmax sobre un array de puntuaciones con temperatura.
+
+    Args:
+        scores (np.ndarray): Array de puntuaciones a convertir en probabilidades.
+        temperature (float): Temperatura de la distribución. Mayor temperatura → más aleatoriedad.
+    Returns:
+        np.ndarray: Array de probabilidades que suma 1.0.
+    """
     if len(scores) == 0:
         return np.array([])
     t = max(float(temperature), 1e-6)
@@ -771,6 +878,12 @@ _estrategia_actual: str = 'minimax'
 
 
 def _seleccionar_estrategia() -> str:
+    """
+    Elige aleatoriamente una estrategia de apertura ponderada por los pesos de ESTRATEGIAS.
+
+    Returns:
+        str: Nombre de la estrategia seleccionada.
+    """
     nombres = [e[0] for e in ESTRATEGIAS]
     pesos   = np.array([e[1] for e in ESTRATEGIAS], dtype=float)
     pesos  /= pesos.sum()
@@ -780,6 +893,21 @@ def _seleccionar_estrategia() -> str:
 def choose_move_softmax(board: np.ndarray,
                         temperature: float = T_SOFTMAX,
                         base_depth: int = SEARCH_DEPTH):
+    """
+    Selecciona el movimiento del robot combinando tres capas: reflejos, libro de aperturas y minimax.
+
+    Capa 1: gana o bloquea inmediatamente si es posible.
+    Capa 2: aplica la estrategia de apertura elegida si hay ≥6 celdas libres.
+    Capa 3: minimax con temperatura adaptativa según la fase de la partida.
+
+    Args:
+        board (np.ndarray): Matriz 3x3 con el estado actual del tablero.
+        temperature (float): Temperatura base para el softmax. Por defecto T_SOFTMAX.
+        base_depth (int): Profundidad base de búsqueda minimax. Por defecto SEARCH_DEPTH.
+    Returns:
+        tuple: (movimiento, puntuación, profundidad, temperatura, probabilidades)
+               movimiento es (fila, columna) o None si no hay jugadas posibles.
+    """
     global _estrategia_actual
 
     empty = int(np.count_nonzero(board == 0))
@@ -809,9 +937,9 @@ def choose_move_softmax(board: np.ndarray,
     if empty >= 7:
         depth, temp = max(3, base_depth),       temperature + 0.25
     elif empty >= 4:
-        depth, temp = max(5, base_depth + 1),   temperature
+        depth, temp = max(3, base_depth + 1),   temperature
     else:
-        depth, temp = 9,                         max(0.05, temperature - 0.3)
+        depth, temp = 9,                         max(0.35, temperature - 0.1)
 
     moves, scores = evaluate_moves_numeric(board, depth)
     if not moves:
@@ -823,14 +951,17 @@ def choose_move_softmax(board: np.ndarray,
     return moves[idx], float(noisy[idx]), depth, temp, probs.tolist()
 
 
-# ──────────────────────────────────────────────
-# Servidor Flask
-# ──────────────────────────────────────────────
-
 flask_app = Flask(__name__)
 
 
 def _decodificar_imagen_request():
+    """
+    Extrae y decodifica los bytes de imagen del request Flask actual (multipart o raw).
+
+    Returns:
+        tuple[np.ndarray|None, str|None]: (imagen BGR, None) si se decodificó correctamente,
+                                          (None, mensaje_error) en caso contrario.
+    """
     data = (request.files['image'].read()
             if 'image' in request.files
             else request.data)
@@ -844,6 +975,7 @@ def _decodificar_imagen_request():
 
 @flask_app.route('/health', methods=['GET'])
 def health():
+    """Endpoint de salud. Devuelve 200 con el ID del modelo activo."""
     return jsonify({'ok': True, 'modelo': ROBOFLOW_MODEL_ID}), 200
 
 
@@ -928,16 +1060,15 @@ def movimiento():
         return jsonify({'error': str(e)}), 500
 
 
-# ──────────────────────────────────────────────
-# Verificación de estado inicial del tablero
-# ──────────────────────────────────────────────
-
 _sync_landmarker      = None
 _sync_landmarker_lock = threading.Lock()
 
 
 def _init_sync_landmarker() -> None:
-    """Inicializa (lazy) el GestureRecognizer en modo IMAGE para uso síncrono en Flask."""
+    """
+    Inicializa de forma lazy el GestureRecognizer de MediaPipe en modo IMAGE para Flask.
+    Si ya está inicializado o MediaPipe no está disponible, no hace nada.
+    """
     global _sync_landmarker
     if _sync_landmarker is not None or not TIENE_MEDIAPIPE:
         return
@@ -1005,7 +1136,13 @@ def verificar_tablero():
 
 
 def _lanzar_flask_en_hilo(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
-    """Arranca Flask en un hilo daemon para que conviva con el bucle live."""
+    """
+    Arranca el servidor Flask en un hilo daemon para que conviva con el bucle live.
+
+    Args:
+        host (str): Dirección IP de escucha. Por defecto '0.0.0.0'.
+        port (int): Puerto de escucha. Por defecto DEFAULT_PORT (5000).
+    """
     print('=' * 45)
     print(f'  Flask (ESP32-CAM) → http://{host}:{port}')
     print(f'    /procesar          POST  → análisis de imagen')
@@ -1016,10 +1153,6 @@ def _lanzar_flask_en_hilo(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) ->
     flask_app.run(host=host, port=port, use_reloader=False)
 
 
-# ──────────────────────────────────────────────
-# Estado compartido entre hilos (Roboflow + MediaPipe)
-# ──────────────────────────────────────────────
-
 _latest_preds: list = []
 _preds_version: int = 0
 _preds_lock         = threading.Lock()
@@ -1029,13 +1162,27 @@ _mp_lock            = threading.Lock()
 
 
 def _mp_callback(result, _output_image, _timestamp_ms) -> None:
+    """
+    Callback de MediaPipe en modo LIVE_STREAM. Actualiza _mp_latest_result con el resultado más reciente.
+
+    Args:
+        result: GestureRecognizerResult con landmarks y gestos detectados.
+        _output_image: Frame de salida (no utilizado).
+        _timestamp_ms: Timestamp en milisegundos (no utilizado).
+    """
     global _mp_latest_result
     with _mp_lock:
         _mp_latest_result = result
 
 
 def _inference_worker(frame_ref: list, stop_event: threading.Event) -> None:
-    """Corre inferencia de Roboflow continuamente sobre el frame más reciente."""
+    """
+    Hilo de inferencia continua: ejecuta infer() sobre el frame más reciente en bucle.
+
+    Args:
+        frame_ref (list): Lista de un elemento con el frame BGR más reciente (actualizado desde el hilo principal).
+        stop_event (threading.Event): Evento para señalizar la parada del hilo.
+    """
     while not stop_event.is_set():
         with _preds_lock:
             frame = frame_ref[0] if frame_ref else None
@@ -1052,20 +1199,12 @@ def _inference_worker(frame_ref: list, stop_event: threading.Event) -> None:
             print(f'[Roboflow] {e}')
 
 
-# ──────────────────────────────────────────────
-# Descarga del modelo MediaPipe
-# ──────────────────────────────────────────────
-
 def ensure_gesture_model() -> None:
     if not Path(GESTURE_MODEL_PATH).exists():
         print('Descargando gesture_recognizer.task (~25 MB)…')
         urllib.request.urlretrieve(GESTURE_MODEL_URL, GESTURE_MODEL_PATH)
         print('Descarga completa.')
 
-
-# ──────────────────────────────────────────────
-# Bucle principal (tiempo real)
-# ──────────────────────────────────────────────
 
 def main_live(flask_host: str = DEFAULT_HOST,
               flask_port: int = DEFAULT_PORT,
@@ -1218,10 +1357,6 @@ def main_server(host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> None:
     print('=' * 45)
     flask_app.run(host=host, port=port)
 
-
-# ──────────────────────────────────────────────
-# Punto de entrada
-# ──────────────────────────────────────────────
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

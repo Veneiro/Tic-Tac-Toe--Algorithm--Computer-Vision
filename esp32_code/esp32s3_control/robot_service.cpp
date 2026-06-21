@@ -5,6 +5,7 @@ namespace
   hw_timer_t *timerControl = NULL;
   TaskHandle_t controlTaskHandle = NULL;
 
+  /** @brief ISR del temporizador (segura para IRAM): notifica a controlTask mediante notificación de tarea FreeRTOS en cada tick. */
   void IRAM_ATTR onTimer()
   {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -16,6 +17,9 @@ namespace
     }
   }
 
+  /** @brief Tarea de control FreeRTOS: espera la notificación del temporizador, lee los encoders, ejecuta el PID
+   *  y actualiza la cinemática directa en cada tick.
+   *  @param parameter Parámetro de tarea no utilizado. */
   void controlTask(void *parameter)
   {
     while (true)
@@ -34,6 +38,8 @@ namespace
   }
 }
 
+/** @brief Inicializa SPI, el driver I2C, el estado de los encoders, la tarea FreeRTOS de control,
+ *  la ISR del temporizador hardware y la pinza. Debe llamarse una vez durante setup(). */
 void robotServiceInit()
 {
   beginSPI();
@@ -69,14 +75,20 @@ void robotServiceInit()
   Serial.println("Robot service listo");
 }
 
+/** @brief Resetea el objetivo del robot a la posición de inicio llamando a goHome(). */
 void resetPosition(){
   goHome();
 }
 
+/** @brief Marcador de posición para resetear las posiciones de las piezas; actualmente sin implementación. */
 void robotServiceResetPieces()
 {
 }
 
+/** @brief Busca la primera pieza azul disponible y ejecuta un pickAndPlace hacia la celda indicada del tablero.
+ *  @param fila    Fila objetivo del tablero (0–2).
+ *  @param columna Columna objetivo del tablero (0–2).
+ *  @return Verdadero si se encontró una pieza y se ejecutó el movimiento; falso en caso contrario. */
 bool robotServiceMoveToCell(int fila, int columna)
 {
   if (fila < 0 || fila > 2 || columna < 0 || columna > 2)
@@ -115,6 +127,9 @@ bool robotServiceMoveToCell(int fila, int columna)
   return false;
 }
 
+/** @brief Cuenta y registra el número de cambios de celda entre dos estados del tablero.
+ *  @param previousBoard Estado 3x3 del tablero antes del movimiento.
+ *  @param currentBoard  Estado 3x3 del tablero después del movimiento. */
 void robotServiceApplyBoardDelta(int previousBoard[3][3], int currentBoard[3][3])
 {
   int changes = 0;

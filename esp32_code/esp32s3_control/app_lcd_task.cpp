@@ -2,6 +2,10 @@
 
 SemaphoreHandle_t lcdMutex = NULL;
 
+/** @brief Tarea FreeRTOS en el núcleo 1: llama a dibujarDecoracionTurnoAuto cada 80 ms usando
+ *  un intento de bloqueo recursivo no bloqueante del mutex para que el bucle principal nunca se bloquee.
+ *  También hace parpadear un aviso "RETIRE LA MANO" en la fila 0 cuando se detecta una mano.
+ *  @param param Parámetro de tarea no utilizado. */
 static void _lcdAnimTask(void* param) {
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(80));
@@ -21,6 +25,7 @@ static void _lcdAnimTask(void* param) {
     }
 }
 
+/** @brief Crea el mutex recursivo del LCD y lanza _lcdAnimTask en el núcleo 1 con prioridad 2. */
 void lcdTaskInit() {
     // Mutex recursivo: permite que el loop principal haga LCD_LOCK anidados
     // (ej. menú de pausa que a su vez llama actualizarLCD).

@@ -7,32 +7,21 @@
 #define PIN_SCLK 12
 #define PIN_MOSI 11
 #define PIN_MISO 13
-/*
-#define PIN_CS1  10
-#define PIN_CS2  14
-#define PIN_CS3  15
-*/
-
-/*
-#define PIN_CS1  15
-#define PIN_CS2  10
-#define PIN_CS3  14
-*/
 #define PIN_CS1  10
 #define PIN_CS2  14
 #define PIN_CS3  15
 
-// ===================== I2C =====================
+
 #define SDA_PIN 8
 #define SCL_PIN 9
 #define ADDRESS 0x34
-// ===================== SERVO =====================
+
 #define PIN_GRIPPER 18
-// ===================== JOYSTICK =====================
+
 #define pinJoystickX 2
 #define pinJoystickY 1
 #define pinJoystickButton 3
-// ===================== CONFIG =====================
+
 #define MOTOR_FIXED_SPEED_ADDR 51
 #define MOTOR_FIXED_PWM_ADDR 31
 #define MOTOR_ENCODER_TOTAL_ADDR 60
@@ -52,26 +41,14 @@
 #define T_acc 1.0   // s
 #define z_trabajo -7.5
 #define z_elevacion 5.0
-// ===================== DEFINICIONES =====================
-//BASE
-//#define E1_MIN 32.87     //-90
-//#define E1_ZERO 122.87   //(RELACION DIRECTA CON EL ENCODER RELATIVO, RELACION DIRECTA CON EL MODELO)
-//#define E1_MAX 212.87    //90
+
 #define Q1_MIN -90
 #define Q1_MAX 90
-//HOMBRO
-//#define E2_MIN 159.43   //-8
-//#define E2_ZERO 167.52  //(RELACION DIRECTA CON EL ENCODER RELATIVO, RELACION DIRECTA CON EL MODELO)
-//#define E2_MAX 226.49   //51
 #define Q2_MIN -8
 #define Q2_MAX 51
-//CODO
-//#define E3_MIN 22.50   //-37
-//#define E3_ZERO 77.08  //(RELACION INVERSA CON EL ENCODER RELATIVO, RELACION INVERSA CON EL MODELO)
-//#define E3_MAX 114.52   //45
 #define Q3_MIN -37
 #define Q3_MAX 45
-// ===================== ESTRUCTURAS =====================
+
 
 struct AngularPosition {
   float q1;
@@ -128,7 +105,6 @@ struct BoxWorkspace
     float zMax;
 };
 
-// ===================== VARIABLES EXTERNAS =====================
 extern int32_t motor_encoder[4];
 extern int32_t motor_encoder_prev[4];
 extern float joint_encoder[3];
@@ -136,8 +112,6 @@ extern float joint_encoder_raw[3];
 extern float joint_encoder_raw_prev[3];
 extern float ramal_encoder[3];
 extern float velocidad_motor[4];
-//extern float posicion_rel[4];
-//extern float posicion_offset[4];
 extern float posicion_error[4];
 extern float int_posicion_error[4];
 extern float Kp[4];
@@ -157,16 +131,12 @@ extern bool encoder_inicia_bien;
 extern float joint_referencia_calibracion[3];
 extern float encoder_referencia_calibracion[3];
 
-// ===================== FUNCIONES =====================
-
 void inicilizacion(void);
 void processSerialCommand(String input);
 void printHelp(void);
 void applyInverseKinematicsToTarget(void);
 bool isInside(const BoxWorkspace &workspace, const LinearPosition &p);
 void goHome();
-
-// ===================== CLASES =====================
 
 class HermiteSegment {
 private:

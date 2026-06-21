@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Bucle del menú principal: muestra un menú animado con selector de modo y efecto de barrido "PRESS START".
+ *  Lee el interruptor de modo (AUTO/MANUAL), detecta combinaciones de easter-egg (MENU+JOY = Pacman, MENU = Snake)
+ *  y bloquea hasta que se pulsa START. Llama a confirmarInicio() para los inicios en modo normal. */
 void esperarSeleccionMenu()
 {
   bool ultimoEstadoSwitch = !digitalRead(pinSwitch); 
@@ -117,15 +120,15 @@ void esperarSeleccionMenu()
   }
 }
 
+/** @brief Reproduce una animación de confirmación de modo en el LCD antes de entrar al juego.
+ *  Para modo AUTO: muestra la secuencia de activación del robot con animación de parpadeo de ojos.
+ *  Para modo MANUAL: muestra barras de calibración de ejes con simulación sinusoidal del joystick. */
 void confirmarInicio()
 {
   lcd.clear();
 
   if (modoAutomatico) 
   {
-    // ==========================================
-    // ANIMACIÓN ASCII: ROBOT DESPERTANDO
-    // ==========================================
     // Fase 1: Apagado
     lcd.setCursor(0, 0); lcd.print("     ___            ");
     lcd.setCursor(0, 1); lcd.print("    [off]           ");
@@ -154,9 +157,6 @@ void confirmarInicio()
   } 
   else 
   {
-    // ==========================================
-    // ANIMACIÓN: CALIBRACIÓN DE EJES (MODO MANUAL)
-    // ==========================================
     lcd.setCursor(3, 0); 
     lcd.print("MANUAL MODE OK");
     

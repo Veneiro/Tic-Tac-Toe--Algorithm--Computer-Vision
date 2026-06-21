@@ -7,7 +7,6 @@
 
 SPIClass AMT_spi(HSPI);
 
-// ===================== CONFIGURACIÓN SPI =====================
 
 static const uint32_t AMT_SPI_FREQ = 250000;
 
@@ -16,20 +15,21 @@ static const int AMT_ZERO_MAX_TRIES = 120;
 
 static const uint16_t AMT_READ_ERROR = 0xFFFF;
 
-// Comandos AMT203
+
 static const uint8_t AMT_CMD_NOP      = 0x00;
 static const uint8_t AMT_CMD_RD_POS   = 0x10;
 static const uint8_t AMT_CMD_SET_ZERO = 0x70;
 
-// Respuestas AMT203
+
 static const uint8_t AMT_RESP_ZERO_OK = 0x80;
 
-// Validación de lectura
+
 static const int AMT_VALIDATION_DIFF_COUNTS = 8;   // 8 cuentas ≈ 0.70 grados
 
 
-// ===================== FUNCIONES AUXILIARES =====================
-
+/**
+ * @brief Pone los tres pines CS en HIGH para deseleccionar todos los encoders.
+ */
 static void deselectAllEncoders()
 {
     digitalWrite(PIN_CS1, HIGH);
@@ -38,6 +38,12 @@ static void deselectAllEncoders()
 }
 
 
+/**
+ * @brief Calcula la diferencia circular entre dos lecturas del encoder (rango 0-4095).
+ * @param a Valor A en cuentas (0-4095).
+ * @param b Valor B en cuentas (0-4095).
+ * @return Diferencia con signo en el rango [-2048, 2048], teniendo en cuenta el cruce 0/360.
+ */
 static int circularDiffCounts(uint16_t a, uint16_t b)
 {
     int diff = (int)a - (int)b;
@@ -55,6 +61,12 @@ static int circularDiffCounts(uint16_t a, uint16_t b)
 }
 
 
+/**
+ * @brief Calcula la media circular entre dos lecturas del encoder.
+ * @param a Valor A en cuentas (0-4095).
+ * @param b Valor B en cuentas (0-4095).
+ * @return Media circular en cuentas (0-4095).
+ */
 static uint16_t circularAverageCounts(uint16_t a, uint16_t b)
 {
     int diff = circularDiffCounts(b, a);
@@ -74,13 +86,16 @@ static uint16_t circularAverageCounts(uint16_t a, uint16_t b)
 }
 
 
-// ===================== TRANSFERENCIA SPI =====================
-
+/**
+ * @brief Realiza una transferencia SPI de un byte al encoder seleccionado.
+ * @param msg    Byte a enviar.
+ * @param cs_pin Pin de chip select del encoder destino.
+ * @return Byte recibido del encoder durante la transferencia.
+ */
 uint8_t SPI_T(uint8_t msg, uint8_t cs_pin)
 {
     uint8_t resp;
 
-    // Asegurar que ningún encoder quede seleccionado por accidente
     deselectAllEncoders();
 
     delayMicroseconds(10);
@@ -97,25 +112,21 @@ uint8_t SPI_T(uint8_t msg, uint8_t cs_pin)
 
     AMT_spi.endTransaction();
 
-    // Separación entre transferencias
     delayMicroseconds(150);
 
     return resp;
 }
 
 
-// ===================== LECTURA AMT203 =====================
-// Protocolo por byte, manteniendo la lógica que sí funcionaba:
-// 1) Enviar 0x10
-// 2) Enviar NOP hasta recibir 0x10
-// 3) Leer MSB y LSB
-// 4) Si no responde 0x10, devolver error
-
+/**
+ * @brief Lee la posición absoluta del encoder AMT203S-V siguiendo su protocolo SPI.
+ * @param cs_pin Pin de chip select del encoder a leer.
+ * @return Posición en cuentas (0-4095), o AMT_READ_ERROR (0xFFFF) si falla.
+ */
 uint16_t readAMT203(uint8_t cs_pin)
 {
     uint8_t received = 0x00;
 
-    // Enviar comando de lectura
     SPI_T(AMT_CMD_RD_POS, cs_pin);
 
     for (int count = 0; count < AMT_READ_MAX_TRIES; count++)
@@ -149,10 +160,12 @@ uint16_t readAMT203(uint8_t cs_pin)
 }
 
 
-// ===================== LECTURA VALIDADA =====================
-// Lee tres veces y acepta únicamente si al menos dos lecturas
-// son coherentes entre sí.
-
+/**
+ * @brief Lee la posición del encoder tres veces y valida por mayoría.
+ *        Acepta el resultado solo si al menos dos lecturas coinciden dentro de AMT_VALIDATION_DIFF_COUNTS.
+ * @param cs_pin Pin de chip select del encoder a leer.
+ * @return Media de las dos lecturas coherentes, o AMT_READ_ERROR si ningún par concuerda.
+ */
 uint16_t readAMT203Validated(uint8_t cs_pin)
 {
     uint16_t r1 = readAMT203(cs_pin);
@@ -191,6 +204,11 @@ uint16_t readAMT203Validated(uint8_t cs_pin)
 }
 
 
+/**
+ * @brief Lee la posición del encoder y la convierte a grados (0-360).
+ * @param cs_pin Pin de chip select del encoder a leer.
+ * @return Ángulo en grados (0.0-360.0), o NAN si la lectura falla.
+ */
 float readAngleDeg(uint8_t cs_pin)
 {
     uint16_t pos = readAMT203Validated(cs_pin);
@@ -204,8 +222,10 @@ float readAngleDeg(uint8_t cs_pin)
 }
 
 
-// ===================== FLUSH SPI =====================
-
+/**
+ * @brief Envía 10 NOPs al encoder para limpiar su buffer SPI interno.
+ * @param cs_pin Pin de chip select del encoder a vaciar.
+ */
 void flushEncoder(uint8_t cs_pin)
 {
     for (int k = 0; k < 10; k++)
@@ -216,6 +236,9 @@ void flushEncoder(uint8_t cs_pin)
 }
 
 
+/**
+ * @brief Llama a flushEncoder sobre los tres encoders del sistema.
+ */
 void flushAllEncoders()
 {
     flushEncoder(PIN_CS1);
@@ -224,8 +247,9 @@ void flushAllEncoders()
 }
 
 
-// ===================== INICIALIZACIÓN SPI =====================
-
+/**
+ * @brief Inicializa el bus SPI y los pines CS de los tres encoders AMT203S-V.
+ */
 void beginSPI(void)
 {
     pinMode(PIN_CS1, OUTPUT);
@@ -246,8 +270,9 @@ void beginSPI(void)
 }
 
 
-// ===================== RESET ESTADO SOFTWARE =====================
-
+/**
+ * @brief Pone a cero las variables software de seguimiento de ángulo de los tres ejes.
+ */
 void resetEncoderSoftwareState(void)
 {
     for (int i = 0; i < 3; i++)
@@ -260,8 +285,10 @@ void resetEncoderSoftwareState(void)
 }
 
 
-// ===================== LECTURA DE TODOS LOS ENCODERS =====================
-
+/**
+ * @brief Lee los tres encoders absolutos y actualiza joint_encoder[] con seguimiento de vueltas.
+ *        Detecta cruces 0/360 para mantener continuidad en el ángulo acumulado.
+ */
 void readAbsoluteEncoder(void)
 {
     for (int i = 0; i < 3; i++)
@@ -273,7 +300,6 @@ void readAbsoluteEncoder(void)
             Serial.print("ERROR lectura encoder ");
             Serial.println(i + 1);
 
-            // No actualizamos ese encoder si falló
             continue;
         }
 
@@ -297,6 +323,9 @@ void readAbsoluteEncoder(void)
 }
 
 
+/**
+ * @brief Imprime por Serial los ángulos acumulados de los tres encoders (joint_encoder[]).
+ */
 void printAbsoluteEncoder(void)
 {
     Serial.print(" AE1:");
@@ -310,8 +339,9 @@ void printAbsoluteEncoder(void)
 }
 
 
-// ===================== DEBUG RAW =====================
-
+/**
+ * @brief Imprime por Serial los valores crudos (sin seguimiento de vueltas) de los tres encoders.
+ */
 void printAbsoluteEncoderRaw(void)
 {
     Serial.print(" RAW1:");
@@ -325,8 +355,12 @@ void printAbsoluteEncoderRaw(void)
 }
 
 
-// ===================== SET ZERO AMT203 =====================
-
+/**
+ * @brief Envía el comando de set-zero al encoder y espera la confirmación.
+ *        El nuevo cero se graba en la EEPROM interna del encoder.
+ * @param cs_pin Pin de chip select del encoder a resetear.
+ * @return true si el encoder confirmó la operación (0x80), false si se agotaron los reintentos.
+ */
 bool setZeroAMT203(uint8_t cs_pin)
 {
     uint8_t resp = 0x00;
@@ -349,6 +383,9 @@ bool setZeroAMT203(uint8_t cs_pin)
 }
 
 
+/**
+ * @brief Ejecuta el set-zero en los tres encoders secuencialmente e imprime el resultado.
+ */
 void setZeroAllEncoders(void)
 {
     Serial.println("===== SET ZERO ENCODERS =====");
@@ -384,8 +421,9 @@ void setZeroAllEncoders(void)
 }
 
 
-// ===================== VERIFICAR CERO =====================
-
+/**
+ * @brief Lee los tres encoders e indica por Serial si cada uno está cerca del cero (< 5°).
+ */
 void verifyZeroAllEncoders(void)
 {
     Serial.println("===== VERIFICANDO CERO =====");
@@ -423,233 +461,3 @@ void verifyZeroAllEncoders(void)
 
     Serial.println("============================");
 }
-
-/*
-#include <Arduino.h>
-#include <SPI.h>
-#include <math.h>
-
-#include "config.h"
-#include "encoder.h"
-
-SPIClass AMT_spi(HSPI);
-
-// ===================== CONFIGURACIÓN SPI =====================
-
-// Según tu observación, prueba primero con 250 kHz.
-// Si sigue fallando el encoder 3, baja a 100 kHz.
-static const uint32_t AMT_SPI_FREQ = 250000;
-
-// Timeout para esperar respuesta del encoder
-static const uint32_t AMT_READ_TIMEOUT_MS = 50;
-static const uint32_t AMT_ZERO_TIMEOUT_MS = 1000;
-
-// Valor especial para indicar error de lectura
-static const uint16_t AMT_READ_ERROR = 0xFFFF;
-
-// Comandos AMT203
-static const uint8_t AMT_CMD_NOP      = 0x00;
-static const uint8_t AMT_CMD_RD_POS   = 0x10;
-static const uint8_t AMT_CMD_SET_ZERO = 0x70;
-
-static const uint8_t AMT_RESP_WAIT    = 0xA5;
-static const uint8_t AMT_RESP_ZERO_OK = 0x80;
-
-
-// ===================== TRANSFERENCIA SPI =====================
-
-uint8_t SPI_T(uint8_t msg, uint8_t cs_pin)
-{
-    uint8_t resp;
-
-    AMT_spi.beginTransaction(SPISettings(AMT_SPI_FREQ, MSBFIRST, SPI_MODE0));
-
-    digitalWrite(cs_pin, LOW);
-    delayMicroseconds(1);
-
-    resp = AMT_spi.transfer(msg);
-
-    delayMicroseconds(5);
-    digitalWrite(cs_pin, HIGH);
-
-    // El datasheet recomienda dejar separación entre lecturas;
-    // 20 us es recomendado, aquí dejamos margen.
-    delayMicroseconds(100);
-
-    AMT_spi.endTransaction();
-
-    return resp;
-}
-
-
-// ===================== LECTURA AMT203 =====================
-
-uint16_t readAMT203(uint8_t cs_pin)
-{
-    uint8_t received = 0x00;
-    uint8_t temp[2];
-
-    // 1. Enviar comando de lectura de posición
-    SPI_T(AMT_CMD_RD_POS, cs_pin);
-
-    // 2. Enviar NOP hasta recibir eco 0x10
-    unsigned long t0 = millis();
-
-    do {
-        received = SPI_T(AMT_CMD_NOP, cs_pin);
-
-        if (millis() - t0 > AMT_READ_TIMEOUT_MS) {
-            return AMT_READ_ERROR;
-        }
-
-    } while (received != AMT_CMD_RD_POS);
-
-    // 3. Leer MSB y LSB
-    temp[0] = SPI_T(AMT_CMD_NOP, cs_pin);
-    temp[1] = SPI_T(AMT_CMD_NOP, cs_pin);
-
-    // El byte MSB solo usa los 4 bits bajos
-    temp[0] &= 0x0F;
-
-    uint16_t ABSposition = ((uint16_t)temp[0] << 8) | temp[1];
-
-    return ABSposition;
-}
-
-
-float readAngleDeg(uint8_t cs_pin)
-{
-    uint16_t pos = readAMT203(cs_pin);
-
-    if (pos == AMT_READ_ERROR) {
-        return NAN;
-    }
-
-    return (pos * 360.0f) / 4096.0f;
-}
-
-
-// ===================== INICIALIZACIÓN SPI =====================
-
-void beginSPI(void)
-{
-    // Primero asegurar que todos los CS estén desactivados
-    pinMode(PIN_CS1, OUTPUT);
-    pinMode(PIN_CS2, OUTPUT);
-    pinMode(PIN_CS3, OUTPUT);
-
-    digitalWrite(PIN_CS1, HIGH);
-    digitalWrite(PIN_CS2, HIGH);
-    digitalWrite(PIN_CS3, HIGH);
-
-    delay(100);
-
-    // Luego iniciar SPI
-    AMT_spi.begin(PIN_SCLK, PIN_MISO, PIN_MOSI);
-
-    delay(100);
-}
-
-
-// ===================== LECTURA DE TODOS LOS ENCODERS =====================
-
-void readAbsoluteEncoder(void)
-{
-    for (int i = 0; i < 3; i++)
-    {
-        float angle = readAngleDeg(pines_CS[i]);
-
-        if (isnan(angle))
-        {
-            Serial.print("ERROR lectura encoder ");
-            Serial.println(i + 1);
-
-            // No actualizamos ese encoder si falló
-            continue;
-        }
-
-        joint_encoder_raw_prev[i] = joint_encoder_raw[i];
-        joint_encoder_raw[i] = angle;
-
-        float dif = joint_encoder_raw[i] - joint_encoder_raw_prev[i];
-
-        // Detección de cruce 0/360.
-        // Mejor usar 180° que 90° para evitar falsos saltos.
-        if (dif > 180.0f)
-        {
-            ramal_encoder[i] -= 360.0f;
-        }
-        else if (dif < -180.0f)
-        {
-            ramal_encoder[i] += 360.0f;
-        }
-
-        joint_encoder[i] = joint_encoder_raw[i] + ramal_encoder[i];
-    }
-}
-
-
-void printAbsoluteEncoder(void)
-{
-    Serial.print(" AE1:");
-    Serial.print(joint_encoder[0]);
-
-    Serial.print(" || AE2:");
-    Serial.print(joint_encoder[1]);
-
-    Serial.print(" || AE3:");
-    Serial.println(joint_encoder[2]);
-}
-
-
-// ===================== SET ZERO AMT203 =====================
-
-bool setZeroAMT203(uint8_t cs_pin)
-{
-    // Enviar comando set_zero_point
-    SPI_T(AMT_CMD_SET_ZERO, cs_pin);
-
-    unsigned long t0 = millis();
-    uint8_t resp = AMT_RESP_WAIT;
-
-    while (millis() - t0 < AMT_ZERO_TIMEOUT_MS)
-    {
-        delayMicroseconds(100);
-
-        resp = SPI_T(AMT_CMD_NOP, cs_pin);
-
-        if (resp == AMT_RESP_ZERO_OK)
-        {
-            // 0x80 significa que el offset fue guardado en EEPROM.
-            // Aún falta apagar/encender el encoder para aplicar el nuevo cero.
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
-void setZeroAllEncoders(void)
-{
-    Serial.println("Poniendo en cero encoder 1...");
-    bool ok1 = setZeroAMT203(PIN_CS1);
-
-    Serial.println("Poniendo en cero encoder 2...");
-    bool ok2 = setZeroAMT203(PIN_CS2);
-
-    Serial.println("Poniendo en cero encoder 3...");
-    bool ok3 = setZeroAMT203(PIN_CS3);
-
-    Serial.print("Zero E1: ");
-    Serial.println(ok1 ? "OK" : "ERROR");
-
-    Serial.print("Zero E2: ");
-    Serial.println(ok2 ? "OK" : "ERROR");
-
-    Serial.print("Zero E3: ");
-    Serial.println(ok3 ? "OK" : "ERROR");
-
-    Serial.println("IMPORTANTE: Apaga y enciende la alimentacion de los encoders para aplicar el nuevo cero.");
-}
-*/

@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Espera activa hasta que el pin del botón especificado pase a LOW (soltado con INPUT_PULLUP),
+ *  luego espera 50 ms adicionales para el antirrebote.
+ *  @param pin Número de pin GPIO del botón que se espera. */
 void esperarLiberacionBoton(int pin)
 {
   while (digitalRead(pin) == HIGH)
@@ -10,6 +13,10 @@ void esperarLiberacionBoton(int pin)
   delay(50); // Anti-rebote extra al soltar
 }
 
+/** @brief Establece los tres LEDs del semáforo.
+ *  @param rojo    Verdadero para encender el LED rojo.
+ *  @param amarillo Verdadero para encender el LED amarillo.
+ *  @param verde   Verdadero para encender el LED verde. */
 void setSemaforo(bool rojo, bool amarillo, bool verde)
 {
   digitalWrite(pinLedRojo, rojo ? HIGH : LOW);
@@ -17,6 +24,8 @@ void setSemaforo(bool rojo, bool amarillo, bool verde)
   digitalWrite(pinLedVerde, verde ? HIGH : LOW);
 }
 
+/** @brief Carga los 8 caracteres personalizados base del LCD: robot, trofeo, joystick, destello,
+ *  barra invertida, engranaje1, engranaje2 y cabeza de serpiente en las ranuras CGRAM 0–7. */
 void cargarCaracteresBase()
 {
   lcd.createChar(0, charRobot);
@@ -34,6 +43,7 @@ void cargarCaracteresBase()
 // Usa slots 5-7 redefinidos como llamas mientras está activa.
 // calor[col]: 1=chispa, 2=media, 3=intensa. Se actualizan ~cada 130ms.
 
+/** @brief Reemplaza las ranuras CGRAM 5–7 del LCD con caracteres de animación de fuego (llama suave, media e intensa). */
 static void _cargarCharsFuego()
 {
   lcd.createChar(5, charFireLight);
@@ -41,6 +51,10 @@ static void _cargarCharsFuego()
   lcd.createChar(7, charFireHot);
 }
 
+/** @brief Escribe un carácter de celda de fuego en el LCD en la posición actual del cursor.
+ *  La intensidad del carácter depende del nivel de calor y la fila vertical (la inferior es siempre intensa).
+ *  @param calor Nivel de calor: 1 = chispa, 2 = llama media, 3 = llama intensa.
+ *  @param row   Fila del LCD (1–3); la fila 3 siempre se dibuja con intensidad máxima. */
 static void _escribirCeldaFuego(uint8_t calor, int row)
 {
   if (row == 3)
@@ -60,6 +74,8 @@ static void _escribirCeldaFuego(uint8_t calor, int row)
   }
 }
 
+/** @brief Dibuja bordes de fuego animados en el LCD (cols 0–4 izquierda, cols 15–19 derecha, filas 1–3).
+ *  Los valores de calor se aleatorizan aproximadamente cada 130 ms para crear un efecto de parpadeo. */
 void dibujarFuego()
 {
   const int COLS_F = 5;
@@ -97,6 +113,9 @@ void dibujarFuego()
 
 // Cuenta líneas donde 'ficha' aparece 2 veces y queda 1 hueco libre.
 // Robot=2, Humano=1  (de app_endgame: ganador==2 → "ROBOT WINS!")
+/** @brief Cuenta las líneas del tablero donde la ficha dada aparece dos veces con una celda vacía (amenazas de horquilla).
+ *  @param ficha Valor de la ficha a analizar (1 = humano, 2 = robot).
+ *  @return Número de líneas amenazantes (0–8). */
 static int8_t _amenazas(int ficha)
 {
   static const uint8_t L[8][3][2] = {
@@ -119,6 +138,9 @@ static int8_t _amenazas(int ficha)
   return n;
 }
 
+/** @brief Dibuja la barra lateral de la cara del robot en el LCD durante el modo automático.
+ *  Muestra ojos animados con expresiones (parpadeo, reacciones a eventos del tablero), un indicador
+ *  de turno y bordes de fuego cuando quedan 3 celdas o menos. Solo se ejecuta en modoAutomatico. */
 void dibujarDecoracionTurnoAuto()
 {
   if (!modoAutomatico) return;
