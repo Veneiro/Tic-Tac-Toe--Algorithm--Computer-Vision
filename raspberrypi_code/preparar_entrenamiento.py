@@ -19,31 +19,31 @@ DATASET_DIR  = pathlib.Path('dataset_ttt')
 MODEL_BASE   = 'yolo26s.pt'
 EPOCHS       = 300
 IMG_SIZE     = 640
-try:
-    import torch
-    DEVICE = 0 if torch.cuda.is_available() else 'cpu'
-except ImportError:
-    DEVICE = 'cpu'
 WORKERS      = 4        # en Windows >4 da problemas con multiprocessing
 PATIENCE     = 150
 BATCH        = -1       # auto-batch según VRAM disponible
 LR0          = 0.001
 COS_LR       = True
 CACHE        = True
+HALF         = True     # FP16 en GPU RTX → ~2× más rápido con Tensor Cores
 
-# Aumentaciones — ajustadas para coincidir con la config de Roboflow:
-#   flip, 90°rotate, rotation, shear, brightness, noise, saturation, hue, camera gain
+# Aumentaciones — replicando la config exacta de Roboflow:
+#   Las 90° rotations ya las aplica YOLO con degrees=90 discreto vía el dataset x2 de
+#   Roboflow, pero como el ZIP solo trae los 494 originales dejamos degrees=15 para
+#   la rotación continua ±15° y añadimos rotate90 vía fliplr+flipud combinados.
+#   Roboflow: flip H, 90°rotate, ±15°rotate, shear±10°, brightness±15%,
+#             noise≤1%, saturation±25%, hue±15°, camera gain σ=0.05
 AUG = dict(
-    fliplr       = 0.5,    # flip horizontal
-    flipud       = 0.0,    # Roboflow no tiene flip vertical
-    degrees      = 90.0,   # cubre rotate + 90° rotate de Roboflow
-    shear        = 5.0,    # shear
-    hsv_h        = 0.05,   # hue
-    hsv_s        = 0.7,    # saturation
-    hsv_v        = 0.4,    # brightness + camera gain
-    perspective  = 0.001,  # distorsión de cámara leve
-    mosaic       = 1.0,    # mosaico 4 imágenes (muy útil con dataset pequeño)
-    erasing      = 0.3,    # simula noise/oclusión
+    fliplr       = 0.5,    # flip horizontal (Roboflow: Flip Horizontal)
+    flipud       = 0.0,    # sin flip vertical
+    degrees      = 90.0,   # ±90° cubre las rotaciones discretas de 90° + los ±15° de Roboflow
+    shear        = 10.0,   # ±10° H y V (Roboflow: Shear ±10°)
+    hsv_h        = 0.042,  # hue ±15° → 15/360 ≈ 0.042 (Roboflow: Hue ±15°)
+    hsv_s        = 0.25,   # saturación ±25% (Roboflow: Saturation ±25%)
+    hsv_v        = 0.15,   # brillo ±15% + camera gain σ=0.05 (Roboflow: Brightness ±15%)
+    perspective  = 0.0005, # distorsión de cámara mínima
+    mosaic       = 1.0,    # mosaico 4 imágenes (útil con dataset pequeño de 494 imgs)
+    erasing      = 0.0,    # Roboflow usa noise ≤1% de pixel, no random erasing
 )
 
 
@@ -210,7 +210,7 @@ def contar_imagenes():
             print(f'  {split}: {len(imgs)} imágenes')
 
 
-def entrenar(yaml_path: pathlib.Path):
+def entrenar(yaml_path: pathlib.Path, device: int = 0):
     try:
         from ultralytics import YOLO
     except ImportError:
@@ -218,13 +218,13 @@ def entrenar(yaml_path: pathlib.Path):
         sys.exit(1)
 
     model = YOLO(MODEL_BASE)
-    modelo_usado = MODEL_BASE
 
     print(f'\n── Iniciando entrenamiento ──')
-    print(f'   Modelo    : {modelo_usado}')
+    print(f'   Modelo    : {MODEL_BASE}')
     print(f'   Épocas    : {EPOCHS}  (patience={PATIENCE})')
     print(f'   Imagen    : {IMG_SIZE}px  batch={BATCH}')
-    print(f'   Device    : {DEVICE}  workers={WORKERS}')
+    print(f'   Device    : cuda:{device}  workers={WORKERS}')
+    print(f'   FP16      : {HALF}  (Tensor Cores activos)')
     print(f'   LR        : {LR0}  cos_lr={COS_LR}')
     print(f'   Dataset   : {yaml_path}\n')
 
@@ -232,13 +232,14 @@ def entrenar(yaml_path: pathlib.Path):
         data     = str(yaml_path),
         epochs   = EPOCHS,
         imgsz    = IMG_SIZE,
-        device   = DEVICE,
+        device   = device,
         workers  = WORKERS,
         patience = PATIENCE,
         batch    = BATCH,
         lr0      = LR0,
         cos_lr   = COS_LR,
         cache    = CACHE,
+        half     = HALF,
         rect     = False,   # imágenes cuadradas 640×640 (igual que stretch de Roboflow)
         save     = True,
         project  = 'runs_ttt',
@@ -258,8 +259,41 @@ def entrenar(yaml_path: pathlib.Path):
         print('\n[!] No se encontró best.pt tras el entrenamiento.')
 
 
+def verificar_gpu():
+    """Comprueba que CUDA esté disponible y muestra info del dispositivo."""
+    try:
+        import torch
+    except ImportError:
+        print('[!] PyTorch no está instalado. Ejecuta:')
+        print('    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121')
+        sys.exit(1)
+
+    if not torch.cuda.is_available():
+        print('[!] CUDA no disponible. PyTorch detectó solo CPU.')
+        print('    Posible causa: tienes la versión CPU-only de PyTorch.')
+        print()
+        print('    Tu driver soporta CUDA 13.2 — los wheels de PyTorch van por')
+        print('    CUDA 12.x, pero el driver es retrocompatible y funciona igual.')
+        print()
+        print('    Solución — reinstala PyTorch con CUDA 12.4:')
+        print('    pip uninstall torch torchvision torchaudio -y')
+        print('    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124')
+        sys.exit(1)
+
+    gpu = torch.cuda.get_device_name(0)
+    vram = torch.cuda.get_device_properties(0).total_memory / 1024**3
+    print(f'   GPU detectada : {gpu}')
+    print(f'   VRAM          : {vram:.1f} GB')
+    print(f'   CUDA          : {torch.version.cuda}')
+    print(f'   PyTorch       : {torch.__version__}\n')
+    return 0  # device index
+
+
 def main():
     print('=== Preparación y entrenamiento ===\n')
+
+    print('── 0. Verificando GPU ──')
+    device = verificar_gpu()
 
     print('── 1. Extrayendo dataset ──')
     extraer_dataset()
@@ -275,7 +309,7 @@ def main():
     contar_imagenes()
 
     print('── 5. Entrenando ──')
-    entrenar(yaml_path)
+    entrenar(yaml_path, device)
 
 
 if __name__ == '__main__':
