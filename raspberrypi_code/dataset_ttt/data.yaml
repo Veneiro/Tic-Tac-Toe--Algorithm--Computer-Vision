@@ -1,0 +1,16 @@
+train: train/images
+val: valid/images
+test: test/images
+nc: 5
+names:
+- blue circle
+- board
+- cells
+- grid
+- red cross
+roboflow:
+  workspace: ttt-vofgg
+  project: misovos
+  version: dataset
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/ttt-vofgg/misovos/dataset/dataset

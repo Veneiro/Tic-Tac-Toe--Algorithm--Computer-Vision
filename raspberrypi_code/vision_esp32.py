@@ -70,11 +70,11 @@ INFER_WIDTH  = 640
 
 # Inferencia local (YOLO)
 USE_LOCAL_MODEL  = True      # True → usa best.pt en lugar de Roboflow
-LOCAL_MODEL_PATH = 'C:/Users/mateo/Documents/GitHub/Tic Tac Toe - Algorithm - Computer Vision/raspberrypi_code/runs/detect/runs_ttt/train-3/weights/best.pt'  # ruta al archivo .pt
+LOCAL_MODEL_PATH = 'C:/Users/mateo/Documents/GitHub/Tic Tac Toe - Algorithm - Computer Vision/raspberrypi_code/runs/detect/runs_ttt/train-6/weights/best.pt'  # ruta al archivo .pt
 
 _yolo_model = None            # se inicializa la primera vez que se llama a infer()
 
-USE_ESP32        = True
+USE_ESP32        = False
 ESP32_STREAM_URL = 'http://10.191.81.88:81/stream'
 CAMERA_ID        = 0
 CAM_W, CAM_H     = 1280, 720
