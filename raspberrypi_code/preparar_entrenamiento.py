@@ -15,10 +15,8 @@ DATASET_ZIP  = pathlib.Path('misovos.yolo26.zip')
 DATASET_DIR  = pathlib.Path('dataset_ttt')
 
 # ── Configuración de entrenamiento ──────────────────────────────
-# yolo26s de Ultralytics HUB (mismo modelo que usa Roboflow internamente)
 # Sin GPU: cambia a 'yolov8n.pt' y EPOCHS=50 para una prueba rápida en CPU (~2-3h)
-MODEL_BASE   = 'ul://ultralytics/yolo26/yolo26s'
-MODEL_BACKUP = 'yolo11s.pt'
+MODEL_BASE   = 'yolo26s.pt'
 EPOCHS       = 300
 IMG_SIZE     = 640
 try:
@@ -219,14 +217,8 @@ def entrenar(yaml_path: pathlib.Path):
         print('[!] ultralytics no instalado. Ejecuta: pip install ultralytics')
         sys.exit(1)
 
-    try:
-        model = YOLO(MODEL_BASE)
-        modelo_usado = MODEL_BASE
-    except Exception as e:
-        print(f'[!] No se pudo cargar {MODEL_BASE}: {e}')
-        print(f'    Usando fallback: {MODEL_BACKUP}')
-        model = YOLO(MODEL_BACKUP)
-        modelo_usado = MODEL_BACKUP
+    model = YOLO(MODEL_BASE)
+    modelo_usado = MODEL_BASE
 
     print(f'\n── Iniciando entrenamiento ──')
     print(f'   Modelo    : {modelo_usado}')
