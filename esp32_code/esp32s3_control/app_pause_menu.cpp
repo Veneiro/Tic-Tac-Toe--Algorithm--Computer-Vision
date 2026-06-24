@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Muestra la pantalla de pausa con una animación de apertura y espera la decisión del jugador.
+ *  START sale del juego; MENU reanuda la partida. Incluye una animación de parpadeo inactivo mientras espera.
+ *  @return Verdadero si el jugador eligió abortar la partida (START pulsado); falso para reanudar (MENU pulsado). */
 bool abrirMenuPausa()
 {
   // --- 1. Animación de Apertura (Cortina desde el centro hacia afuera) ---

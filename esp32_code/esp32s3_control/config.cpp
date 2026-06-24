@@ -5,7 +5,6 @@
 #include <Arduino.h>
 #include "gripper.h"
 
-// ===================== CONSTANTS =====================
 const LinearPosition home_position = {0.0, 26.0, 15.35};
 const int pines_CS[3] = {PIN_CS1, PIN_CS2, PIN_CS3};
 const LinearPosition array_piezas[5] = {
@@ -28,14 +27,11 @@ const LinearPosition board_grids[3][3] = {
   {{-5.45, 38.0, z_trabajo}, {-5.4, 34.30, z_trabajo}, {-5.4, 30.42, z_trabajo}}
 };
 bool encoder_inicia_bien = true;
-// ===================== VARIABLES GLOBALES =====================
 volatile bool interrupt_flag = false;
 bool ok = false;
 
-float joint_referencia_calibracion[3] = {0.0, 0.0, 0.0};//0.0, -6.42, 57.48
-//float joint_referencia_calibracion[3] = {0.18, -7.39, 57.12};
+float joint_referencia_calibracion[3] = {0.0, 0.0, 0.0};
 float encoder_referencia_calibracion[3] = {-1.32, 95.27, 2.11};
-//float encoder_referencia_calibracion[3] = {0.0, 0.0, 0.0};
 
 int32_t motor_encoder[4] = {0};
 int32_t motor_encoder_prev[4] = {0};
@@ -68,8 +64,10 @@ Robot my_robot = {
   {0.0, 0.0, 0.0}    // v: v_x, v_y, v_z
 };
 
-// ===================== FUNCIONES =====================
-
+/**
+ * @brief Inicializa el sistema: lee encoders, calcula cinemática directa e inversa hacia home.
+ *        Establece encoder_inicia_bien según si los ángulos están dentro de los límites articulares.
+ */
 void inicilizacion(void){
   for(int i=0;i<3;i++){
         joint_encoder_raw_prev[i] = readAngleDeg(pines_CS[i]);
@@ -93,6 +91,9 @@ void inicilizacion(void){
   target_angle = my_solution.q;
 }
 
+/**
+ * @brief Fija target_position a home_position y calcula la cinemática inversa correspondiente.
+ */
 void goHome(){
   target_position = home_position;
   IKResult my_solution = inverseKinematics(target_position);
@@ -100,6 +101,12 @@ void goHome(){
   target_angle = my_solution.q;
 }
 
+/**
+ * @brief Comprueba si una posición cartesiana está dentro del espacio de trabajo definido.
+ * @param workspace Estructura BoxWorkspace con los límites x, y, z.
+ * @param p         Posición cartesiana a verificar.
+ * @return true si la posición está dentro del espacio de trabajo, false en caso contrario.
+ */
 bool isInside(const BoxWorkspace &workspace, const LinearPosition &p)
 {
     if (p.x < workspace.xMin || p.x > workspace.xMax)
@@ -120,6 +127,10 @@ bool isInside(const BoxWorkspace &workspace, const LinearPosition &p)
     return true;
 }
 
+/**
+ * @brief Calcula la cinemática inversa para target_position y actualiza target_angle si hay solución.
+ *        Imprime el resultado por Serial.
+ */
 void applyInverseKinematicsToTarget()
 {
     IKResult my_solution = inverseKinematics(target_position);
@@ -148,6 +159,9 @@ void applyInverseKinematicsToTarget()
     }
 }
 
+/**
+ * @brief Imprime por Serial la lista de comandos disponibles con ejemplos de uso.
+ */
 void printHelp(void)
 {
     Serial.println("===== AVAILABLE COMMANDS =====");
@@ -167,6 +181,10 @@ void printHelp(void)
     Serial.println("===============================");
 }
 
+/**
+ * @brief Interpreta y ejecuta un comando recibido por Serial (x, y, z, go, p, t, home, help).
+ * @param input Cadena de texto con el comando y, opcionalmente, su valor numérico.
+ */
 void processSerialCommand(String input)
 {
     input.trim();
@@ -248,9 +266,7 @@ void processSerialCommand(String input)
     }
 }
 
-//***************************************************************
-// ===================== CLASE HERMITE =====================
-//***************************************************************
+/** @brief Constructor por defecto. Inicializa el segmento con puntos y tangentes en el origen. */
 HermiteSegment::HermiteSegment() {
   P0 = {0.0f, 0.0f, 0.0f};
   P1 = {0.0f, 0.0f, 0.0f};
@@ -266,6 +282,13 @@ HermiteSegment::HermiteSegment() {
   }
 }
 
+/**
+ * @brief Constructor que inicializa el segmento y construye la tabla de longitud de arco.
+ * @param p0 Punto inicial.
+ * @param p1 Punto final.
+ * @param t0 Tangente en p0.
+ * @param t1 Tangente en p1.
+ */
 HermiteSegment::HermiteSegment(LinearPosition p0,
                                LinearPosition p1,
                                LinearPosition t0,
@@ -286,8 +309,11 @@ HermiteSegment::HermiteSegment(LinearPosition p0,
   buildArcLengthTable();
 }
 
-// ===================== CONFIGURACIÓN =====================
-
+/**
+ * @brief Asigna nuevos puntos y tangentes al segmento y reconstruye la tabla de arco.
+ * @param p0 Punto inicial.  @param p1 Punto final.
+ * @param t0 Tangente en p0. @param t1 Tangente en p1.
+ */
 void HermiteSegment::setPoints(LinearPosition p0,
                                LinearPosition p1,
                                LinearPosition t0,
@@ -300,8 +326,11 @@ void HermiteSegment::setPoints(LinearPosition p0,
   buildArcLengthTable();
 }
 
-// ===================== EVALUACIÓN HERMITE =====================
-
+/**
+ * @brief Evalúa la curva cúbica de Hermite en el parámetro u ∈ [0,1].
+ * @param u Parámetro normalizado.
+ * @return Posición cartesiana interpolada.
+ */
 LinearPosition HermiteSegment::evaluate(float u) {
   if (u < 0.0f) u = 0.0f;
   if (u > 1.0f) u = 1.0f;
@@ -323,8 +352,11 @@ LinearPosition HermiteSegment::evaluate(float u) {
   return p;
 }
 
-// ===================== DERIVADA RESPECTO A u =====================
-
+/**
+ * @brief Calcula la derivada (tangente) de la curva en u.
+ * @param u Parámetro normalizado.
+ * @return Vector tangente en la posición u.
+ */
 LinearPosition HermiteSegment::derivative(float u) {
   if (u < 0.0f) u = 0.0f;
   if (u > 1.0f) u = 1.0f;
@@ -345,8 +377,11 @@ LinearPosition HermiteSegment::derivative(float u) {
   return dp;
 }
 
-// ===================== DISTANCIA 3D =====================
-
+/**
+ * @brief Calcula la distancia euclídea 3D entre dos posiciones.
+ * @param a Posición origen. @param b Posición destino.
+ * @return Distancia en las mismas unidades que las coordenadas.
+ */
 float HermiteSegment::distance3D(LinearPosition a, LinearPosition b) {
   float dx = b.x - a.x;
   float dy = b.y - a.y;
@@ -355,8 +390,10 @@ float HermiteSegment::distance3D(LinearPosition a, LinearPosition b) {
   return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
-// ===================== TABLA DE LONGITUD DE ARCO =====================
-
+/**
+ * @brief Construye la tabla de longitud de arco (u_table/s_table) con HERMITE_ARC_SAMPLES muestras.
+ *        Normaliza s_table a [0,1] y actualiza length.
+ */
 void HermiteSegment::buildArcLengthTable() {
   length = 0.0f;
 
@@ -387,8 +424,10 @@ void HermiteSegment::buildArcLengthTable() {
   tableReady = true;
 }
 
-// ===================== LONGITUD TOTAL =====================
-
+/**
+ * @brief Devuelve la longitud total del segmento en unidades de espacio (cm).
+ * @return Longitud del segmento.
+ */
 float HermiteSegment::getLength() {
   if (!tableReady) {
     buildArcLengthTable();
@@ -397,8 +436,11 @@ float HermiteSegment::getLength() {
   return length;
 }
 
-// ===================== CONVERSIÓN LONGITUD NORMALIZADA → u =====================
-
+/**
+ * @brief Convierte una longitud de arco normalizada s_norm ∈ [0,1] al parámetro u mediante interpolación lineal.
+ * @param s_norm Longitud de arco normalizada.
+ * @return Parámetro u correspondiente.
+ */
 float HermiteSegment::getUFromNormalizedArc(float s_norm) {
   if (!tableReady) {
     buildArcLengthTable();
@@ -428,15 +470,21 @@ float HermiteSegment::getUFromNormalizedArc(float s_norm) {
   return 1.0f;
 }
 
-// ===================== EVALUACIÓN POR LONGITUD NORMALIZADA =====================
-
+/**
+ * @brief Evalúa la curva a una longitud de arco normalizada s_norm.
+ * @param s_norm Longitud de arco normalizada ∈ [0,1].
+ * @return Posición cartesiana en ese punto del arco.
+ */
 LinearPosition HermiteSegment::evaluateByNormalizedArc(float s_norm) {
   float u = getUFromNormalizedArc(s_norm);
   return evaluate(u);
 }
 
-// ===================== EVALUACIÓN POR DISTANCIA LOCAL =====================
-
+/**
+ * @brief Evalúa la curva a una distancia absoluta s_local desde el inicio del segmento.
+ * @param s_local Distancia recorrida en el segmento (cm).
+ * @return Posición cartesiana en ese punto.
+ */
 LinearPosition HermiteSegment::evaluateByDistance(float s_local) {
   if (!tableReady) {
     buildArcLengthTable();
@@ -453,9 +501,8 @@ LinearPosition HermiteSegment::evaluateByDistance(float s_local) {
 
   return evaluateByNormalizedArc(s_norm);
 }
-//***************************************************************
-// ===================== CLASE TRAYECTORIA =====================
-//***************************************************************
+
+/** @brief Constructor. Inicializa la trayectoria sin segmentos. */
 TrajectoryPath::TrajectoryPath() {
   numSegments = 0;
   totalLength = 0.0f;
@@ -467,6 +514,7 @@ TrajectoryPath::TrajectoryPath() {
   }
 }
 
+/** @brief Elimina todos los segmentos y reinicia la longitud total. */
 void TrajectoryPath::clear() {
   numSegments = 0;
   totalLength = 0.0f;
@@ -478,6 +526,11 @@ void TrajectoryPath::clear() {
   }
 }
 
+/**
+ * @brief Añade un segmento Hermite al final de la trayectoria.
+ * @param segment Segmento a añadir.
+ * @return true si se añadió correctamente, false si se alcanzó MAX_TRAJECTORY_SEGMENTS.
+ */
 bool TrajectoryPath::addSegment(HermiteSegment segment) {
   if (numSegments >= MAX_TRAJECTORY_SEGMENTS) {
     return false;
@@ -491,6 +544,10 @@ bool TrajectoryPath::addSegment(HermiteSegment segment) {
   return true;
 }
 
+/**
+ * @brief Calcula segmentStart[], segmentEnd[] y totalLength a partir de los segmentos añadidos.
+ *        Debe llamarse tras añadir todos los segmentos y antes de evaluar la trayectoria.
+ */
 void TrajectoryPath::build() {
   totalLength = 0.0f;
 
@@ -505,6 +562,10 @@ void TrajectoryPath::build() {
   pathReady = true;
 }
 
+/**
+ * @brief Devuelve la longitud total de la trayectoria (suma de todos los segmentos).
+ * @return Longitud total en cm.
+ */
 float TrajectoryPath::getTotalLength() {
   if (!pathReady) {
     build();
@@ -513,10 +574,16 @@ float TrajectoryPath::getTotalLength() {
   return totalLength;
 }
 
+/** @brief Devuelve el número de segmentos añadidos a la trayectoria. */
 int TrajectoryPath::getNumSegments() {
   return numSegments;
 }
 
+/**
+ * @brief Evalúa la trayectoria completa a una distancia global s_global desde el inicio.
+ * @param s_global Distancia recorrida en toda la trayectoria (cm).
+ * @return Posición cartesiana correspondiente.
+ */
 LinearPosition TrajectoryPath::evaluateByDistance(float s_global) {
   if (!pathReady) {
     build();
@@ -555,6 +622,11 @@ LinearPosition TrajectoryPath::evaluateByDistance(float s_global) {
   );
 }
 
+/**
+ * @brief Evalúa la trayectoria a una distancia normalizada s_norm ∈ [0,1].
+ * @param s_norm Fracción de la longitud total.
+ * @return Posición cartesiana correspondiente.
+ */
 LinearPosition TrajectoryPath::evaluateByNormalizedDistance(float s_norm) {
   if (!pathReady) {
     build();
@@ -567,9 +639,8 @@ LinearPosition TrajectoryPath::evaluateByNormalizedDistance(float s_norm) {
 
   return evaluateByDistance(s_global);
 }
-//***************************************************************
-// ===================== CLASE PERFIL =====================
-//***************************************************************
+
+/** @brief Constructor por defecto. Inicializa todos los parámetros del perfil a cero. */
 SinusoidalSCurveProfile::SinusoidalSCurveProfile() {
   S = 0.0f;
   Vmax = 0.0f;
@@ -579,12 +650,24 @@ SinusoidalSCurveProfile::SinusoidalSCurveProfile() {
   Ttotal = 0.0f;
 }
 
+/**
+ * @brief Constructor que configura el perfil directamente.
+ * @param totalDistance Distancia total a recorrer (cm).
+ * @param maxVelocity   Velocidad máxima (cm/s).
+ * @param accelTime     Tiempo de aceleración y desaceleración (s).
+ */
 SinusoidalSCurveProfile::SinusoidalSCurveProfile(float totalDistance,
                                                  float maxVelocity,
                                                  float accelTime) {
   setProfile(totalDistance, maxVelocity, accelTime);
 }
 
+/**
+ * @brief Configura los parámetros del perfil S-curve sinusoidal y calcula los tiempos de fase.
+ *        Si la trayectoria es demasiado corta para alcanzar Vmax, aplica perfil triangular.
+ * @param totalDistance Distancia total (cm). @param maxVelocity Velocidad máxima (cm/s).
+ * @param accelTime     Tiempo de aceleración = tiempo de desaceleración (s).
+ */
 void SinusoidalSCurveProfile::setProfile(float totalDistance,
                                          float maxVelocity,
                                          float accelTime) {
@@ -641,6 +724,11 @@ void SinusoidalSCurveProfile::setProfile(float totalDistance,
   Ttotal = Ta + Tc + Td;
 }
 
+/**
+ * @brief Evalúa el perfil en el instante t y devuelve posición, velocidad y aceleración.
+ * @param t Tiempo transcurrido desde el inicio (s).
+ * @return MotionState con s (distancia), v (velocidad) y a (aceleración) en ese instante.
+ */
 MotionState SinusoidalSCurveProfile::evaluate(float t) {
   MotionState state;
 
@@ -715,26 +803,36 @@ MotionState SinusoidalSCurveProfile::evaluate(float t) {
   return state;
 }
 
+/** @brief Devuelve el tiempo total de la maniobra (Ta + Tc + Td) en segundos. */
 float SinusoidalSCurveProfile::getTotalTime() {
   return Ttotal;
 }
 
+/** @brief Devuelve la distancia total configurada S (cm). */
 float SinusoidalSCurveProfile::getTotalDistance() {
   return S;
 }
 
+/** @brief Devuelve la velocidad máxima Vmax (cm/s), que puede diferir de la configurada en perfiles cortos. */
 float SinusoidalSCurveProfile::getMaxVelocity() {
   return Vmax;
 }
 
+/** @brief Devuelve el tiempo de aceleración Ta (s). */
 float SinusoidalSCurveProfile::getAccelTime() {
   return Ta;
 }
 
+/** @brief Devuelve el tiempo de velocidad constante Tc (s). */
 float SinusoidalSCurveProfile::getConstantTime() {
   return Tc;
 }
 
+/**
+ * @brief Indica si el perfil ha completado la maniobra.
+ * @param t Tiempo transcurrido (s).
+ * @return true si t >= Ttotal.
+ */
 bool SinusoidalSCurveProfile::isFinished(float t) {
   return t >= Ttotal;
 }

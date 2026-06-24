@@ -1,6 +1,8 @@
 #include "app_contracts.h"
 #include <WiFi.h>
 
+/** @brief Animación de arranque: estrellas volantes con texto en modo máquina de escribir "TIC-TAC-TOE" y "CONNECTING...".
+ *  Se ejecuta durante al menos 8 segundos y continúa hasta que el WiFi se conecta, luego llama a transicionBarrido(). */
 void mostrarBienvenida()
 {
   lcd.clear();
@@ -129,6 +131,7 @@ void mostrarBienvenida()
   lcd.clear();
 }
 
+/** @brief Transición de barrido: rellena el LCD columna a columna con bloques sólidos y luego lo limpia de izquierda a derecha. */
 void transicionBarrido() {
   // Cortina de bloques de izquierda a derecha (si no estaba ya en blanco)
   for (int col = 0; col < 20; col++) {

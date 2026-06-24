@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Muestra una animación de gotas de lluvia con un anuncio de turno en modo máquina de escribir durante 5,2 segundos.
+ *  Muestra "MUEVE ROBOT" o "MUEVE HUMANO" según quién mueve primero, luego ejecuta transicionBarrido().
+ *  @param empiezaMaquina Verdadero si el robot toma el primer turno; falso si el humano va primero. */
 void mostrarPantallaTurnoInicial(bool empiezaMaquina)
 {
   const String lineaTurno = empiezaMaquina ? "ROBOT'S TURN" : "HUMAN'S TURN";

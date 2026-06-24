@@ -18,9 +18,6 @@ const char *password = "mim-dpm-2026";
 String raspberryURL = "http://192.168.100.120:5000/procesar";
 String esp32s3URL   = "http://192.168.100.123/tablero";
 
-// ==========================================
-// AJUSTES DE FIABILIDAD / VELOCIDAD
-// ==========================================
 static const int CAPTURE_SAMPLES      = 1;
 static const int CAPTURE_ROUNDS       = 1;
 static const int CAPTURE_MIN_VALID    = 1;
@@ -28,9 +25,6 @@ static const int CELL_MIN_VOTES       = 1;
 static const int CAPTURE_LED_WARMUP_MS = 180;
 static const int CAPTURE_GAP_MS       = 80;
 
-// ==========================================
-// CONFIGURACIÓN DE HARDWARE ESP-EYE
-// ==========================================
 #define BUTTON_PIN 15
 #define LED_PIN    22
 
@@ -51,34 +45,16 @@ static const int CAPTURE_GAP_MS       = 80;
 #define HREF_GPIO_NUM   27
 #define PCLK_GPIO_NUM   25
 
-// ==========================================
-// HANDLES DE SERVIDOR: uno para stream,
-// otro independiente para la API REST.
-// El stream_handler bloquea su propio hilo
-// con un while(true), por lo que NUNCA debe
-// compartir handle con /capturar.
-// ==========================================
-httpd_handle_t stream_httpd = NULL;  // Puerto 81 — solo streaming
-httpd_handle_t api_httpd    = NULL;  // Puerto 80 — /capturar
+// stream_httpd (puerto 81) y api_httpd (puerto 80) son handles separados:
+// stream_handler bloquea con while(true) y no puede compartir handle con /capturar
+httpd_handle_t stream_httpd = NULL;
+httpd_handle_t api_httpd    = NULL;
 
-// ==========================================
-// BANDERA DE CAPTURA CON MUTEX
-// La bandera se escribe desde la tarea HTTP
-// y se lee desde loop() (núcleos distintos).
-// portMUX garantiza coherencia entre núcleos.
-// ==========================================
-static volatile bool captureRequested = false;
-static portMUX_TYPE  captureMux       = portMUX_INITIALIZER_UNLOCKED;
-
-// Evita capturas simultáneas (botón + HTTP al mismo tiempo)
+static volatile bool captureRequested  = false;
+static portMUX_TYPE  captureMux        = portMUX_INITIALIZER_UNLOCKED;
 static volatile bool captureInProgress = false;
 bool lastButtonState = HIGH;
 
-// ==========================================
-// PARSEO Y SERIALIZACIÓN DEL TABLERO
-// ==========================================
-
-// Últimos valores laterales/fuera recibidos de Raspberry.
 static int    g_left[5]          = {0, 0, 0, 0, 0};
 static int    g_right[5]         = {0, 0, 0, 0, 0};
 static int    g_fuera_rojo       = 0;
@@ -86,6 +62,12 @@ static int    g_fuera_azul       = 0;
 static bool   g_mano_en_tablero  = false;
 static String g_tablero_str      = "";  // e.g. "{0,0,0;1,0,0;0,2,0}"
 
+/**
+ * @brief Convierte la cadena de tablero "{v,v,v;v,v,v;v,v,v}" en una matriz 3x3.
+ * @param boardState Cadena con 9 valores separados por comas y punto y coma.
+ * @param board      Matriz 3x3 de salida (0=vacío, 1=jugador, 2=robot).
+ * @return true si se parsearon exactamente 9 valores, false en caso contrario.
+ */
 bool parseBoardString(const String& boardState, int board[3][3]) {
   int values[9];
   int count = 0;
@@ -115,7 +97,13 @@ bool parseBoardString(const String& boardState, int board[3][3]) {
   return true;
 }
 
-// Parsea "{v0,v1,v2,v3,v4}" en un array de n enteros.
+/**
+ * @brief Parsea una cadena "{v0,v1,...,vn-1}" en un array de n enteros.
+ * @param src Cadena fuente con valores numéricos separados por comas.
+ * @param arr Array de salida donde se escriben los valores.
+ * @param n   Número de elementos esperados.
+ * @return true si se extrajeron exactamente n valores, false en caso contrario.
+ */
 bool parseVectorString(const String& src, int* arr, int n) {
   int count = 0;
   String token = "";
@@ -133,6 +121,11 @@ bool parseVectorString(const String& src, int* arr, int n) {
   return (count == n);
 }
 
+/**
+ * @brief Serializa una matriz 3x3 en formato JSON [[a,b,c],[d,e,f],[g,h,i]].
+ * @param board Matriz 3x3 de enteros a serializar.
+ * @return String con la representación JSON de la matriz.
+ */
 String boardToMatrixJson(const int board[3][3]) {
   String json = "[";
   for (int r = 0; r < 3; r++) {
@@ -148,6 +141,13 @@ String boardToMatrixJson(const int board[3][3]) {
   return json;
 }
 
+/**
+ * @brief Extrae un campo entero de una cadena JSON plana.
+ * @param json  Cadena JSON de entrada.
+ * @param key   Nombre del campo a buscar.
+ * @param value Referencia donde se escribe el valor encontrado.
+ * @return true si el campo se encontró y se pudo parsear, false en caso contrario.
+ */
 bool extractIntField(const String& json, const String& key, int& value) {
   String pattern = "\"" + key + "\"";
   int keyPos = json.indexOf(pattern);
@@ -169,6 +169,12 @@ bool extractIntField(const String& json, const String& key, int& value) {
   return true;
 }
 
+/**
+ * @brief Extrae el valor de un campo de cadena de una cadena JSON plana.
+ * @param json Cadena JSON de entrada.
+ * @param key  Nombre del campo a buscar.
+ * @return Valor del campo como String, o cadena vacía si no se encuentra.
+ */
 String extractStringField(const String& json, const String& key) {
   String pattern = "\"" + key + "\"";
   int keyPos = json.indexOf(pattern);
@@ -186,6 +192,13 @@ String extractStringField(const String& json, const String& key) {
   return json.substring(startPos + 1, endPos);
 }
 
+/**
+ * @brief Extrae un campo booleano (true/false) de una cadena JSON plana.
+ * @param json  Cadena JSON de entrada.
+ * @param key   Nombre del campo a buscar.
+ * @param value Referencia donde se escribe el booleano encontrado.
+ * @return true si el campo se encontró y contiene "true" o "false", false en caso contrario.
+ */
 bool extractBoolField(const String& json, const String& key, bool& value) {
   String pattern = "\"" + key + "\"";
   int keyPos = json.indexOf(pattern);
@@ -199,9 +212,10 @@ bool extractBoolField(const String& json, const String& key, bool& value) {
   return false;
 }
 
-// ==========================================
-// CAPTURA DE FOTO ESTABLE
-// ==========================================
+/**
+ * @brief Captura un fotograma estable descartando el primer frame del sensor.
+ * @return Puntero al frame buffer capturado, o NULL si falla la cámara.
+ */
 camera_fb_t *capturarFotoEstable() {
   digitalWrite(LED_PIN, HIGH);
   delay(CAPTURE_LED_WARMUP_MS);
@@ -216,6 +230,11 @@ camera_fb_t *capturarFotoEstable() {
   return fb;
 }
 
+/**
+ * @brief Captura una foto y la envía a la Raspberry Pi para obtener el estado del tablero.
+ * @param board Matriz 3x3 de salida con el estado detectado del tablero.
+ * @return true si la captura y el análisis se completaron correctamente, false en caso de error.
+ */
 bool capturarUnaMuestra(int board[3][3]) {
   camera_fb_t *fb = capturarFotoEstable();
   if (!fb) {
@@ -278,6 +297,12 @@ bool capturarUnaMuestra(int board[3][3]) {
   return true;
 }
 
+/**
+ * @brief Toma varias muestras del tablero y determina el estado por votación por celda.
+ * @param boardConsenso   Matriz 3x3 de salida con el valor más votado por celda.
+ * @param muestrasValidas Referencia donde se escribe el número de muestras correctas obtenidas.
+ * @return true si se obtuvo al menos una muestra válida, false si todas fallaron.
+ */
 bool capturarConsensoTablero(int boardConsenso[3][3], int &muestrasValidas) {
   int muestras[CAPTURE_SAMPLES][3][3] = {{{0}}};
   int ultimaMuestra[3][3] = {{0}};
@@ -324,9 +349,11 @@ bool capturarConsensoTablero(int boardConsenso[3][3], int &muestrasValidas) {
   return muestrasValidas > 0;
 }
 
-// ==========================================
-// LÓGICA PRINCIPAL: CAPTURA + MOVIMIENTO
-// ==========================================
+/**
+ * @brief Ejecuta el flujo completo: captura consenso del tablero, consulta a la IA
+ *        el siguiente movimiento y construye el JSON de respuesta.
+ * @return JSON string con tablero, movimiento, laterales y flags, o cadena vacía si falla.
+ */
 String obtenerTableroYMovimiento() {
   int board[3][3] = {{0}};
   int muestrasValidas = 0;
@@ -389,14 +416,14 @@ String obtenerTableroYMovimiento() {
   return response;
 }
 
-// ==========================================
-// VERIFICACIÓN DE ESTADO DEL TABLERO
-// ==========================================
-
 static volatile bool verificarRequested  = false;
 static portMUX_TYPE  verificarMux        = portMUX_INITIALIZER_UNLOCKED;
 static volatile bool verificarInProgress = false;
 
+/**
+ * @brief Captura una foto y la envía al endpoint /verificar_tablero de la Raspberry Pi.
+ *        El resultado se reenvía directamente al ESP32-S3.
+ */
 void verificarEstadoTablero() {
   camera_fb_t *fb = capturarFotoEstable();
   if (!fb) {
@@ -448,6 +475,12 @@ void verificarEstadoTablero() {
   }
 }
 
+/**
+ * @brief Handler HTTP para POST/GET /verificar. Programa la verificación del tablero de forma
+ *        asíncrona y responde inmediatamente con 200 o 503 si ya hay una captura en curso.
+ * @param req Puntero a la petición HTTP entrante.
+ * @return ESP_OK si la respuesta se envió correctamente.
+ */
 esp_err_t verificar_handler(httpd_req_t *req) {
   if (captureInProgress || verificarInProgress) {
     httpd_resp_set_status(req, "503 Busy");
@@ -462,6 +495,10 @@ esp_err_t verificar_handler(httpd_req_t *req) {
   return httpd_resp_send(req, "{\"status\":\"verificacion programada\"}", HTTPD_RESP_USE_STRLEN);
 }
 
+/**
+ * @brief Reenvía el JSON de estado del tablero y movimiento al ESP32-S3 por HTTP POST.
+ * @param boardState JSON string con el estado completo a enviar.
+ */
 void sendBoardToESP32S3(const String& boardState) {
   if (boardState.length() == 0) {
     Serial.println("[ESP32-S3] String vacio, no se envia");
@@ -494,16 +531,13 @@ void sendBoardToESP32S3(const String& boardState) {
   }
 }
 
-// ==========================================
-// HANDLER /capturar — DISPARO ASÍNCRONO
-//
-// La petición HTTP solo programa la captura
-// y responde de inmediato. El trabajo pesado
-// sigue en loop(), donde luego se analiza la
-// imagen y se empuja el tablero al ESP32-S3.
-// ==========================================
+/**
+ * @brief Handler HTTP para POST/GET /capturar. Programa la captura de forma asíncrona
+ *        y responde inmediatamente con 200 o 503 si ya hay una captura en curso.
+ * @param req Puntero a la petición HTTP entrante.
+ * @return ESP_OK si la respuesta se envió correctamente.
+ */
 esp_err_t capture_handler(httpd_req_t *req) {
-  // Evitar capturas simultáneas
   if (captureInProgress) {
     httpd_resp_set_status(req, "503 Busy");
     httpd_resp_set_type(req, "application/json");
@@ -520,10 +554,12 @@ esp_err_t capture_handler(httpd_req_t *req) {
   return httpd_resp_send(req, "{\"status\":\"captura programada\"}", HTTPD_RESP_USE_STRLEN);
 }
 
-// ==========================================
-// HANDLER / — MJPEG STREAM
-// (en servidor separado, puerto 81)
-// ==========================================
+/**
+ * @brief Handler MJPEG para GET /stream. Transmite frames JPEG continuos en multipart.
+ *        Bloquea el hilo con un while(true) y por eso se ejecuta en un servidor separado.
+ * @param req Puntero a la petición HTTP entrante.
+ * @return ESP_OK al finalizar la transmisión, ESP_FAIL si la cámara falla.
+ */
 esp_err_t stream_handler(httpd_req_t *req) {
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
@@ -557,18 +593,10 @@ esp_err_t stream_handler(httpd_req_t *req) {
   return res;
 }
 
-// ==========================================
-// INICIO DE SERVIDORES HTTP
-//
-// FIX: dos handles independientes:
-//   api_httpd    → puerto 80  (/capturar)
-//   stream_httpd → puerto 81  (/stream)
-//
-// Así el while(true) del stream nunca bloquea
-// las peticiones POST al endpoint de captura.
-// ==========================================
+/**
+ * @brief Inicializa los dos servidores HTTP: API REST en puerto 80 y stream MJPEG en puerto 81.
+ */
 void startCameraServer() {
-  // --- Servidor API (puerto 80) ---
   httpd_config_t api_config = HTTPD_DEFAULT_CONFIG();
   api_config.server_port = 80;
   api_config.stack_size  = 8192;  // stack generoso para HTTPClient anidado
@@ -630,9 +658,10 @@ void startCameraServer() {
   }
 }
 
-// ==========================================
-// FUNCIÓN DE CAPTURA DESDE BOTÓN
-// ==========================================
+/**
+ * @brief Ejecuta el ciclo completo de captura y envío iniciado desde el botón físico.
+ *        Bloquea capturas simultáneas mediante la bandera captureInProgress.
+ */
 void captureAndSend() {
   if (captureInProgress) {
     Serial.println("[BTN] Captura ya en progreso, ignorando pulsacion");
@@ -660,9 +689,6 @@ void captureAndSend() {
   delay(1000);  // Evitar rebotes del botón
 }
 
-// ==========================================
-// SETUP
-// ==========================================
 void setup() {
   Serial.begin(115200);
 
@@ -741,9 +767,6 @@ void setup() {
   Serial.println("=============================\n");
 }
 
-// ==========================================
-// LOOP
-// ==========================================
 void loop() {
   bool currentButtonState = digitalRead(BUTTON_PIN);
   bool buttonPressed = (lastButtonState == HIGH && currentButtonState == LOW);

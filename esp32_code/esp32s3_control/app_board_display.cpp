@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Parsea una cadena con formato "{r,c,c;r,c,c;r,c,c}" en la matriz tablero[][].
+ *  @param entrada Representación en cadena del tablero 3x3 usando dígitos del 0 al 2
+ *                 separados por comas (columnas) y punto y coma (filas). */
 void leetablero(String entrada)
 {
   int inicio = entrada.indexOf('{');
@@ -38,6 +41,8 @@ void leetablero(String entrada)
   }
 }
 
+/** @brief Muestra una animación de entrada en el LCD para la vista del tablero (efecto escáner/revelado).
+ *  Muestra el título letra a letra y luego dibuja el marco del tablero fila a fila. */
 void animarEntradaTablero()
 {
   buzzerPlay(CANCION_RACE_FANFARE, false);
@@ -70,6 +75,7 @@ void animarEntradaTablero()
   delay(250); // Pequeña pausa de cortesía antes de que la cámara empiece a leer
 }
 
+/** @brief Dibuja el arte ASCII del trofeo en las filas 1–3 del LCD y lo mantiene durante 2 segundos. */
 void mostrarCopaASCII() {
   // Limpiamos las 3 filas del tablero antes de dibujar para evitar basura
   for (int i = 1; i <= 3; i++) {
@@ -99,6 +105,9 @@ void mostrarCopaASCII() {
   delay(2000); // Pausa para ver la copa bien
 }
 
+/** @brief Actualiza el LCD con el estado actual del tablero y anima las fichas recién colocadas.
+ *  Adquiere LCD_LOCK, ejecuta una animación de aparición en dos fases para las fichas nuevas
+ *  y luego dibuja el estado estático final del tablero. */
 void actualizarLCD()
 {
   LCD_LOCK();
@@ -173,6 +182,8 @@ void actualizarLCD()
   LCD_UNLOCK();
 }
 
+/** @brief Comprueba todas las filas, columnas y diagonales de tablero[][] en busca de un ganador.
+ *  @return 1 si gana el jugador 1 (X), 2 si gana el jugador 2 (O), 3 en caso de empate, 0 si la partida continúa. */
 int comprobarGanador()
 {
   // 1. Comprobar Filas
@@ -227,6 +238,7 @@ int comprobarGanador()
   return 0; // El juego sigue
 }
 
+/** @brief Imprime el estado actual de tablero[][] en la consola Serial para depuración. */
 void printBoardSerial()
 {
   Serial.println("Parsed matrix:");
@@ -241,6 +253,7 @@ void printBoardSerial()
   }
 }
 
+/** @brief Resetea tablero[][] y tableroAnterior[][] a todos ceros (tablero vacío). */
 void vaciarTablero()
 {
   for (int i = 0; i < 3; i++)
@@ -253,6 +266,4 @@ void vaciarTablero()
   }
 }
 
-// =========================================================
-// FUNCIONES DEL SERVIDOR 
-// =========================================================
+

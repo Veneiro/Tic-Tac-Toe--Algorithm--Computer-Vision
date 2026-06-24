@@ -1,5 +1,8 @@
 #include "app_contracts.h"
 
+/** @brief Minijuego Easter-egg Snake: bucle de juego completo con renderizado en LCD, entrada del joystick,
+ *  paredes con teletransporte, detección de autocolisión, puntuación y pantalla de reintento.
+ *  Incluye una animación de onda expansiva al terminar la partida. Restaura los caracteres base del LCD al salir. */
 void jugarSnake() {
   lcd.clear();
   unsigned long startAnim = millis();

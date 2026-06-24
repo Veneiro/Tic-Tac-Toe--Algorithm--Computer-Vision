@@ -437,8 +437,14 @@ static Voz            _v1, _v2;
 static volatile EstadoBuzzer _estado   = BZ_STOP;
 static volatile bool         _repetir  = true;
 
+/** @brief Silencia una voz escribiendo frecuencia 0 en su canal LEDC.
+ *  @param v Referencia a la Voz que se desea silenciar. */
 static void _silenciar(Voz &v) { ledcWriteTone(v.pin, 0); }
 
+/** @brief Avanza la reproducción de notas para una voz; debe llamarse cada 1 ms.
+ *  Aplica un silencio de corte del 10% al final antes de pasar a la siguiente nota.
+ *  Gestiona el bucle y la detección de fin de canción.
+ *  @param v Referencia a la Voz cuyo estado de reproducción se actualiza. */
 static void _tocarVoz(Voz &v) {
     unsigned long ahora   = millis();
     unsigned long elapsed = ahora - v.tiempoInicioNota;
@@ -466,6 +472,8 @@ static void _tocarVoz(Voz &v) {
     }
 }
 
+/** @brief Devuelve verdadero cuando ambas voces han terminado todas las notas en modo no repetición.
+ *  @return Verdadero si _v1 y _v2 han llegado al final de sus arrays de notas. */
 static bool _ambasTerminaron() {
     return !_repetir &&
            _v1.notaActual >= _v1.totalNotas &&
@@ -473,6 +481,9 @@ static bool _ambasTerminaron() {
 }
 
 // ── Tarea FreeRTOS (núcleo 0) ─────────────────────────────────────
+/** @brief Tarea FreeRTOS fijada al núcleo 0 que gestiona ambas voces del buzzer.
+ *  Llama a _tocarVoz para cada voz cada 1 ms y detiene la reproducción cuando ambas terminan.
+ *  @param params Parámetro de tarea no utilizado (pasar nullptr). */
 static void _buzzerTask(void* /*params*/) {
     while (true) {
         if (_estado == BZ_PLAY) {
@@ -485,6 +496,9 @@ static void _buzzerTask(void* /*params*/) {
 }
 
 // ── API pública ───────────────────────────────────────────────────
+/** @brief Inicializa los canales LEDC para ambos buzzers y lanza la tarea FreeRTOS de reproducción.
+ *  El canal 0 (10 bits) controla BUZZER_PIN_1; el canal 1 (8 bits) controla BUZZER_PIN_2.
+ *  Usa canales y resoluciones separados para evitar que compartan temporizador con el servo. */
 void buzzerInit() {
     // Canales y resoluciones distintos fuerzan timers LEDC separados,
     // evitando que ledcWriteTone de una voz cambie la frecuencia de la otra
@@ -496,6 +510,9 @@ void buzzerInit() {
     xTaskCreatePinnedToCore(_buzzerTask, "buzzer", 3072, nullptr, 1, nullptr, 0);
 }
 
+/** @brief Comienza a reproducir una canción de la tabla de canciones, deteniendo primero cualquier reproducción en curso.
+ *  @param id    Identificador de la canción a reproducir (índice en _tabla[]).
+ *  @param repetir Verdadero para repetir la canción indefinidamente; falso para reproducirla una sola vez. */
 void buzzerPlay(CancionId id, bool repetir) {
     if (id < 0 || id >= NUM_CANCIONES) return;
     const CancionData &c = _tabla[id];
@@ -515,6 +532,7 @@ void buzzerPlay(CancionId id, bool repetir) {
     _estado  = BZ_PLAY;
 }
 
+/** @brief Detiene la reproducción inmediatamente y rebobina ambas voces a la nota 0. */
 void buzzerStop() {
     _estado = BZ_STOP;
     _silenciar(_v1);
@@ -523,6 +541,7 @@ void buzzerStop() {
     _v2.notaActual = 0;
 }
 
+/** @brief Pausa la reproducción si el buzzer está sonando actualmente; no tiene efecto en caso contrario. */
 void buzzerPause() {
     if (_estado != BZ_PLAY) return;
     _estado = BZ_PAUSE;
@@ -530,6 +549,8 @@ void buzzerPause() {
     _silenciar(_v2);
 }
 
+/** @brief Reanuda la reproducción desde un estado pausado; reinicia el tiempo de inicio de nota al momento actual.
+ *  No tiene efecto si el buzzer no está pausado. */
 void buzzerResume() {
     if (_estado != BZ_PAUSE) return;
     unsigned long ahora = millis();
@@ -540,10 +561,15 @@ void buzzerResume() {
     _estado = BZ_PLAY;
 }
 
+/** @brief Devuelve verdadero si el buzzer se encuentra actualmente en estado BZ_PLAY.
+ *  @return Verdadero cuando está reproduciendo activamente, falso cuando está detenido o pausado. */
 bool buzzerSonando() {
     return _estado == BZ_PLAY;
 }
 
+/** @brief Devuelve la duración total en milisegundos de la voz más larga de una canción.
+ *  @param id Identificador de la canción a consultar.
+ *  @return Duración en ms de la más larga de las dos voces; 0 si el identificador es inválido. */
 unsigned long buzzerDuracion(CancionId id) {
     if (id < 0 || id >= NUM_CANCIONES) return 0;
     const CancionData &c = _tabla[id];
