@@ -37,6 +37,12 @@ void setup()
   connectToWiFi();
   mostrarBienvenida();
 
+  // Mensaje de inicialización: visible durante toda la calibración del brazo.
+  lcd.setCursor(0, 0); lcd.print("===  [ SETUP ]   ===");
+  lcd.setCursor(0, 1); lcd.print("  Calibrating...    ");
+  lcd.setCursor(0, 2); lcd.print("  Robot arm...      ");
+  lcd.setCursor(0, 3); lcd.print("  Please wait...    ");
+
   // Inicializa subsistema del brazo robotico (driver, encoders, tarea de control e ISR)
   robotServiceInit();
 
@@ -46,7 +52,7 @@ void setup()
   server.on("/verificar_resultado", HTTP_POST, handleVerificarResultado);
   server.begin();
 
-  Serial.println("Servidor HTTP iniciado en /tablero y /pedir-foto");
+  Serial.println("HTTP server started on /tablero and /pedir-foto");
 
   buzzerInit();
   lcdTaskInit();

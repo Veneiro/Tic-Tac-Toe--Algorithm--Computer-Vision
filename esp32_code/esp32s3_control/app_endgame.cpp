@@ -9,6 +9,7 @@ void manejarFinDeJuego(int ganador)
     CancionId cancion = CANCION_NINGUNA;
     if      (ganador == 1) cancion = CANCION_HUMAN_WIN;
     else if (ganador == 2) cancion = CANCION_ROBOT_WIN;
+    else if (ganador == 3) cancion = CANCION_DRAW;
     if (cancion != CANCION_NINGUNA) buzzerPlay(cancion, false);
 
     String linea1 = "RESULT";

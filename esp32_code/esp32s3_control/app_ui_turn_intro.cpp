@@ -2,7 +2,7 @@
 
 void mostrarPantallaTurnoInicial(bool empiezaMaquina)
 {
-  const String lineaTurno = empiezaMaquina ? "MUEVE ROBOT" : "MUEVE HUMANO";
+  const String lineaTurno = empiezaMaquina ? "ROBOT'S TURN" : "HUMAN'S TURN";
   const int xTurno = (20 - (int)lineaTurno.length()) / 2;
 
   // Estados: 0 = cayendo, 1..4 = impacto/onda.

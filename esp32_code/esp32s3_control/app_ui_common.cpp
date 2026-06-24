@@ -251,13 +251,12 @@ void dibujarDecoracionTurnoAuto()
   // ── 7. Indicador H/R (cols 13-19 = 7 chars, filas 1-3) ──────
   bool pulso = (millis() / 500) % 2 == 0;
   char letra  = turnoMaquina ? 'R' : 'H';
-  char lbl[6];
-  if (pulso) { lbl[0]='['; lbl[1]=' '; lbl[2]=letra; lbl[3]=' '; lbl[4]=']'; lbl[5]='\0'; }
-  else       { lbl[0]=' '; lbl[1]=' '; lbl[2]=letra; lbl[3]=' '; lbl[4]=' '; lbl[5]='\0'; }
 
-  lcd.setCursor(13, 1); lcd.print(pulso ? "  .--. " : "       ");
-  lcd.setCursor(13, 2); lcd.print(" "); lcd.print(lbl); lcd.print(" ");
-  lcd.setCursor(13, 3); lcd.print(pulso ? "  '--' " : "       ");
+  lcd.setCursor(13, 1); lcd.print(pulso ? "   ^   " : "       ");
+  lcd.setCursor(13, 2);
+  if (pulso) { lcd.print(" < "); lcd.print(letra); lcd.print(" > "); }
+  else       { lcd.print("   "); lcd.print(letra); lcd.print("   "); }
+  lcd.setCursor(13, 3); lcd.print(pulso ? "   v   " : "       ");
 }
 
 

@@ -149,9 +149,9 @@ void jugarSnake() {
         int difY = abs(joyY - 2048);
 
         if (difX > difY && difX > 800) {
-          if (joyX < 1200 && dir != 1) dir = 3;      
-          else if (joyX > 2800 && dir != 3) dir = 1; 
-        } 
+          if (joyX < 1200 && dir != 3) dir = 1;
+          else if (joyX > 2800 && dir != 1) dir = 3;
+        }
         else if (difY > difX && difY > 800) {
           if (joyY < 1200 && dir != 2) dir = 0;      
           else if (joyY > 2800 && dir != 0) dir = 2; 

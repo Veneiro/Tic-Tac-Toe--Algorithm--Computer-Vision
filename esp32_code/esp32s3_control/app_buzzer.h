@@ -11,6 +11,8 @@ enum CancionId {
     CANCION_HUMAN_WIN  =  1,   // New Super Mario Bros. Wii - Level Complete (BPM 120)
     CANCION_ROBOT_WIN  =  2,   // New Super Mario Bros. Wii - Game Over (BPM 145)
     CANCION_BOSS_BATTLE =  3,  // Super Mario Bros. 3 - Boss Battle (BPM 90)
+    CANCION_RACE_FANFARE = 4, // Super Mario Kart - Race Fanfare (BPM 122)
+    CANCION_DRAW         = 5, // Super Mario Bros. 3 - Game Over (BPM 100)
     NUM_CANCIONES
 };
 

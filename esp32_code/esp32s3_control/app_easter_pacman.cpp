@@ -368,8 +368,8 @@ void jugarPacman() {
       int difX = abs(joyX - 2048);
       int difY = abs(joyY - 2048);
       if (difX > difY && difX > 800) {
-        if (joyX < 1200) nextDirPac = 3;
-        else if (joyX > 2800) nextDirPac = 1;
+        if (joyX < 1200) nextDirPac = 1;
+        else if (joyX > 2800) nextDirPac = 3;
       } else if (difY > difX && difY > 800) {
         if (joyY < 1200) nextDirPac = 0;
         else if (joyY > 2800) nextDirPac = 2;

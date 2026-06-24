@@ -52,7 +52,7 @@ bool enableGripperServo()
 
         if (!ok)
         {
-            Serial.println("ERROR: ledcAttachChannel fallo en PIN_GRIPPER");
+            Serial.println("ERROR: ledcAttachChannel failed on PIN_GRIPPER");
             forceGripperPinLow();
             return false;
         }
@@ -96,7 +96,7 @@ bool isGripperEnabled()
 
 void beginGripper()
 {
-    Serial.println("beginGripper LEDC: inicio");
+    Serial.println("beginGripper LEDC: start");
 
     if (!enableGripperServo())
     {
@@ -108,7 +108,7 @@ void beginGripper()
 
     disableGripperServo();
 
-    Serial.println("beginGripper LEDC: fin");
+    Serial.println("beginGripper LEDC: end");
 }
 
 // ===================== MOVIMIENTO POR PULSO =====================

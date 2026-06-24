@@ -144,22 +144,22 @@ void applyInverseKinematicsToTarget()
         Serial.print(" q3=");
         Serial.println(target_angle.q3);
     } else {
-        Serial.println("IK ERROR: no hay solucion para esa posicion.");
+        Serial.println("IK ERROR: no solution for this position.");
     }
 }
 
 void printHelp(void)
 {
-    Serial.println("===== COMANDOS DISPONIBLES =====");
-    Serial.println("x valor     -> cambia target_position.x");
-    Serial.println("y valor     -> cambia target_position.y");
-    Serial.println("z valor     -> cambia target_position.z");
-    Serial.println("go          -> aplica cinematica inversa al target_position");
-    Serial.println("p           -> imprime posicion real del efector");
-    Serial.println("t           -> imprime target_position actual");
-    Serial.println("home        -> va a home_position y aplica IK");
-    Serial.println("help        -> muestra esta ayuda");
-    Serial.println("Ejemplos:");
+    Serial.println("===== AVAILABLE COMMANDS =====");
+    Serial.println("x value     -> changes target_position.x");
+    Serial.println("y value     -> changes target_position.y");
+    Serial.println("z value     -> changes target_position.z");
+    Serial.println("go          -> applies inverse kinematics to target_position");
+    Serial.println("p           -> prints real effector position");
+    Serial.println("t           -> prints current target_position");
+    Serial.println("home        -> goes to home_position and applies IK");
+    Serial.println("help        -> shows this help");
+    Serial.println("Examples:");
     Serial.println("x 10");
     Serial.println("y 30");
     Serial.println("z 12");
@@ -193,34 +193,34 @@ void processSerialCommand(String input)
 
     if (cmd == "x") {
         if (valueStr.length() == 0) {
-            Serial.println("ERROR: falta valor para X. Ejemplo: x 10");
+            Serial.println("ERROR: missing value for X. Example: x 10");
             return;
         }
 
         target_position.x = valueStr.toFloat();
-        Serial.print("Nuevo target X = ");
+        Serial.print("New target X = ");
         Serial.println(target_position.x);
         printSetPointPosition();
     }
     else if (cmd == "y") {
         if (valueStr.length() == 0) {
-            Serial.println("ERROR: falta valor para Y. Ejemplo: y 30");
+            Serial.println("ERROR: missing value for Y. Example: y 30");
             return;
         }
 
         target_position.y = valueStr.toFloat();
-        Serial.print("Nuevo target Y = ");
+        Serial.print("New target Y = ");
         Serial.println(target_position.y);
         printSetPointPosition();
     }
     else if (cmd == "z") {
         if (valueStr.length() == 0) {
-            Serial.println("ERROR: falta valor para Z. Ejemplo: z 12");
+            Serial.println("ERROR: missing value for Z. Example: z 12");
             return;
         }
 
         target_position.z = valueStr.toFloat();
-        Serial.print("Nuevo target Z = ");
+        Serial.print("New target Z = ");
         Serial.println(target_position.z);
         printSetPointPosition();
     }
@@ -235,16 +235,16 @@ void processSerialCommand(String input)
     }
     else if (cmd == "home") {
         target_position = home_position;
-        Serial.println("Target cargado: home_position");
+        Serial.println("Target loaded: home_position");
         applyInverseKinematicsToTarget();
     }
     else if (cmd == "help") {
         printHelp();
     }
     else {
-        Serial.print("Comando no reconocido: ");
+        Serial.print("Unrecognized command: ");
         Serial.println(cmd);
-        Serial.println("Escribe help para ver los comandos.");
+        Serial.println("Type help to see commands.");
     }
 }
 

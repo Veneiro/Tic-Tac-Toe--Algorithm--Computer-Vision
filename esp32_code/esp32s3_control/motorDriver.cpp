@@ -47,7 +47,7 @@ void initDriver()
   writeRegister(MOTOR_ENCODER_POLARITY_ADDR, &polarity, 1);
   delay(5);
 
-  Serial.println("Driver configurado");
+  Serial.println("Driver configured");
 }
 
 // ===================== MOTOR =====================

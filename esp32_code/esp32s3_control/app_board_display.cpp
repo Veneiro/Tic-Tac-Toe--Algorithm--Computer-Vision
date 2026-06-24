@@ -7,7 +7,7 @@ void leetablero(String entrada)
 
   if (inicio == -1 || fin == -1)
   {
-    Serial.println("Error: Formato de string no valido");
+    Serial.println("Error: Invalid string format");
     return;
   }
 
@@ -38,8 +38,9 @@ void leetablero(String entrada)
   }
 }
 
-void animarEntradaTablero() 
+void animarEntradaTablero()
 {
+  buzzerPlay(CANCION_RACE_FANFARE, false);
   lcd.clear();
   
   // Fase 1: El título aparece letra a letra (Efecto escáner terminal)
@@ -228,7 +229,7 @@ int comprobarGanador()
 
 void printBoardSerial()
 {
-  Serial.println("Matriz parseada:");
+  Serial.println("Parsed matrix:");
   for (int i = 0; i < 3; i++)
   {
     for (int j = 0; j < 3; j++)

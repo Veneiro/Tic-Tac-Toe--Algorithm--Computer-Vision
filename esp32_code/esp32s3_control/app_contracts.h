@@ -97,7 +97,7 @@ void printBoardSerial();
 bool sendMatrixToRaspberry();
 bool solicitarCapturaCamara();
 bool solicitarVerificacion();
-void procesarEntradaTablero(const String &entrada);
+bool procesarEntradaTablero(const String &entrada);
 void handleTablero();
 void handleRoot();
 void handlePedirFoto();

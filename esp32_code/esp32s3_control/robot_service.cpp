@@ -23,11 +23,18 @@ namespace
       ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
       readAbsoluteEncoder();
+      computeJointsAngle();
+      // Runtime check: si algún joint está >50° fuera de su límite, el encoder ha fallado.
+      if (my_robot.q.q1 < Q1_MIN - 50.0f || my_robot.q.q1 > Q1_MAX + 50.0f ||
+          my_robot.q.q2 < Q2_MIN - 50.0f || my_robot.q.q2 > Q2_MAX + 50.0f ||
+          my_robot.q.q3 < Q3_MIN - 50.0f || my_robot.q.q3 > Q3_MAX + 50.0f)
+      {
+        encoder_inicia_bien = false;
+      }
       if (ok && encoder_inicia_bien)
       {
         setRobotJointPosition(target_angle);
       }
-      computeJointsAngle();
       forwardKinematics();
       interrupt_flag = true;
     }
@@ -66,7 +73,7 @@ void robotServiceInit()
 
   beginGripper();
   openGripperSmooth();
-  Serial.println("Robot service listo");
+  Serial.println("Robot service ready");
 }
 
 void resetPosition(){
@@ -81,13 +88,13 @@ bool robotServiceMoveToCell(int fila, int columna)
 {
   if (fila < 0 || fila > 2 || columna < 0 || columna > 2)
   {
-    Serial.println("[ROBOT] Casilla fuera de rango");
+    Serial.println("[ROBOT] Cell out of range");
     return false;
   }
 
   if (tablero[fila][columna] != 0)
   {
-    Serial.println("[ROBOT] La casilla indicada ya esta ocupada");
+    Serial.println("[ROBOT] Cell already occupied");
     return false;
   }
 
@@ -95,7 +102,7 @@ bool robotServiceMoveToCell(int fila, int columna)
   {
     if (right_fichas[i] == 2)
     {
-      Serial.printf("[ROBOT] Pieza azul en right[%d] → fila=%d col=%d\n", i, fila, columna);
+      Serial.printf("[ROBOT] Blue piece at right[%d] → row=%d col=%d\n", i, fila, columna);
       pickAndPlace(array_piezas[i], board_grids[fila][columna]);
       return true;
     }
@@ -105,13 +112,13 @@ bool robotServiceMoveToCell(int fila, int columna)
   {
     if (left_fichas[i] == 2)
     {
-      Serial.printf("[ROBOT] Pieza azul en left[%d] → fila=%d col=%d\n", i, fila, columna);
+      Serial.printf("[ROBOT] Blue piece at left[%d] → row=%d col=%d\n", i, fila, columna);
       pickAndPlace(array_piezas_enemigas[i], board_grids[fila][columna]);
       return true;
     }
   }
 
-  Serial.println("[ROBOT] Sin piezas azules disponibles en ningun lateral");
+  Serial.println("[ROBOT] No blue pieces available on either side");
   return false;
 }
 
@@ -130,5 +137,5 @@ void robotServiceApplyBoardDelta(int previousBoard[3][3], int currentBoard[3][3]
     }
   }
 
-  Serial.printf("[ROBOT] Board delta aplicado: %d cambios\n", changes);
+  Serial.printf("[ROBOT] Board delta applied: %d changes\n", changes);
 }

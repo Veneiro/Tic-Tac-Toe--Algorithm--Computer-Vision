@@ -1,16 +1,16 @@
 #include "app_contracts.h"
 
-//const char *ssid = "MIM-DPM-GRUPO-3";
-//const char *password = "mim-dpm-2026";
-const char *ssid = "Galaxy S23 E57C";
-const char *password = "2ppyahxwjx4g7zu";
+const char *ssid = "MIM-DPM-GRUPO-3";
+const char *password = "mim-dpm-2026";
+//const char *ssid = "Galaxy S23 E57C";
+//const char *password = "2ppyahxwjx4g7zu";
 
-const char *raspberryPi_IP = "10.191.81.8";
+const char *raspberryPi_IP = "192.168.100.120";
 const int raspberryPi_PORT = 5000;
 const bool reenviarTableroRaspberry = true;
 // Use an explicit IP for the ESP32-CAM to avoid mDNS resolution issues.
 // Replace the IP below with your camera's IP on the network.
-const char *esp32CamURL = "http://10.191.81.88/capturar";
+const char *esp32CamURL = "http://192.168.100.122/capturar";
 
 WebServer server(80);
 

@@ -107,7 +107,7 @@ namespace
 
 void connectToWiFi()
 {
-  Serial.print("Conectando a WiFi: ");
+  Serial.print("Connecting to WiFi: ");
   Serial.println(ssid);
 
   WiFi.mode(WIFI_STA);
@@ -202,12 +202,12 @@ bool sendMatrixToRaspberry()
   String endpoint = "http://" + String(raspberryPi_IP) + ":" + String(raspberryPi_PORT) + "/movimiento";
 
   HTTPClient http;
-  Serial.print("Reenviando a Raspberry: ");
+  Serial.print("Forwarding to Raspberry: ");
   Serial.println(endpoint);
 
   if (!http.begin(endpoint))
   {
-    Serial.println("Error: No se pudo iniciar conexion HTTP con Raspberry");
+    Serial.println("Error: Could not start HTTP connection to Raspberry");
     return false;
   }
 
@@ -220,14 +220,14 @@ bool sendMatrixToRaspberry()
     String response = http.getString();
     if (response.length() > 0)
     {
-      Serial.print("Respuesta Raspberry: ");
+      Serial.print("Raspberry response: ");
       Serial.println(response);
     }
     http.end();
     return true;
   }
 
-  Serial.printf("Error HTTP hacia Raspberry: %s\n", http.errorToString(httpCode).c_str());
+  Serial.printf("HTTP error to Raspberry: %s\n", http.errorToString(httpCode).c_str());
   http.end();
   return false;
 }
@@ -235,13 +235,13 @@ bool sendMatrixToRaspberry()
 bool solicitarCapturaCamara()
 {
   HTTPClient http;
-  Serial.print("Solicitando captura a ESP32-CAM: ");
+  Serial.print("Requesting capture from ESP32-CAM: ");
   Serial.println(esp32CamURL);
 
   http.setTimeout(3000);
   if (!http.begin(esp32CamURL))
   {
-    Serial.println("Error: no se pudo iniciar conexion con ESP32-CAM");
+    Serial.println("Error: could not connect to ESP32-CAM");
     return false;
   }
 
@@ -250,7 +250,7 @@ bool solicitarCapturaCamara()
 
   if (httpCode <= 0)
   {
-    Serial.printf("Error HTTP hacia ESP32-CAM: %s\n", http.errorToString(httpCode).c_str());
+    Serial.printf("HTTP error to ESP32-CAM: %s\n", http.errorToString(httpCode).c_str());
     http.end();
     return false;
   }
@@ -260,12 +260,12 @@ bool solicitarCapturaCamara()
 
   if (httpCode < 200 || httpCode >= 300)
   {
-    Serial.printf("ESP32-CAM devolvio HTTP %d\n", httpCode);
+    Serial.printf("ESP32-CAM returned HTTP %d\n", httpCode);
     Serial.println(respuesta);
     return false;
   }
 
-  Serial.println("Disparo enviado correctamente a la ESP32-CAM");
+  Serial.println("Capture request sent to ESP32-CAM");
   return true;
 }
 
@@ -273,14 +273,39 @@ void handlePedirFoto()
 {
   if (solicitarCapturaCamara())
   {
-    server.send(200, "text/plain", "OK - captura solicitada a la ESP32-CAM");
+    server.send(200, "text/plain", "OK - capture requested to ESP32-CAM");
     return;
   }
 
-  server.send(500, "text/plain", "Error al solicitar captura a la ESP32-CAM");
+  server.send(500, "text/plain", "Error requesting capture to ESP32-CAM");
 }
 
-void procesarEntradaTablero(const String &entrada)
+// Returns 0=OK, 1=no piece placed, 2=multiple pieces, 3=wrong color, 4=existing piece modified.
+// Skips validation (returns 0) when the previous board was empty — that means the robot plays first
+// and there is no human move yet to validate.
+static int _validarMovHumano(int ant[3][3], int nvo[3][3])
+{
+  int nuevas = 0, fN = -1, cN = -1;
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+    {
+      if (ant[i][j] != 0 && nvo[i][j] != ant[i][j]) return 4;
+      if (ant[i][j] == 0 && nvo[i][j] != 0) { nuevas++; fN = i; cN = j; }
+    }
+  if (nuevas == 0)
+  {
+    bool antVacio = true;
+    for (int i = 0; i < 3 && antVacio; i++)
+      for (int j = 0; j < 3 && antVacio; j++)
+        if (ant[i][j] != 0) antVacio = false;
+    return antVacio ? 0 : 1;
+  }
+  if (nuevas > 1) return 2;
+  if (nvo[fN][cN] != 1) return 3;
+  return 0;
+}
+
+bool procesarEntradaTablero(const String &entrada)
 {
   int tableroSnapshot[3][3];
   String tableroParseado = entrada;
@@ -291,9 +316,9 @@ void procesarEntradaTablero(const String &entrada)
   {
     if (!extraerCadenaJson(entrada, "tablero", tableroParseado))
     {
-      Serial.println("Error: la respuesta no contiene 'tablero' valido");
+      Serial.println("Error: response does not contain valid 'tablero'");
       Serial.println(entrada);
-      return;
+      return false;
     }
 
     extraerMovimientoJson(entrada, filaMovimiento, columnaMovimiento);
@@ -322,8 +347,43 @@ void procesarEntradaTablero(const String &entrada)
 
   if (!parseBoardToMatrix(tableroParseado))
   {
-    Serial.println("Error: formato de tablero invalido");
-    return;
+    Serial.println("Error: invalid board format");
+    return false;
+  }
+
+  int errorVal = _validarMovHumano(tableroSnapshot, tablero);
+  if (errorVal != 0)
+  {
+    for (int i = 0; i < 3; i++)
+      for (int j = 0; j < 3; j++)
+        tablero[i][j] = tableroSnapshot[i][j];
+
+    juegoEnCurso = false;  // freeze LCD task so error message isn't overwritten
+    LCD_LOCK();
+    lcd.clear();
+    lcd.setCursor(0, 0); lcd.print("== INVALID MOVE! ===");
+    switch (errorVal)
+    {
+      case 1:
+        lcd.setCursor(0, 1); lcd.print("  No piece added.   ");
+        lcd.setCursor(0, 2); lcd.print("  Place your piece! ");
+        break;
+      case 2:
+        lcd.setCursor(0, 1); lcd.print("  Too many pieces!  ");
+        lcd.setCursor(0, 2); lcd.print("  Place only ONE.   ");
+        break;
+      case 3:
+        lcd.setCursor(0, 1); lcd.print("  Play RED pieces   ");
+        lcd.setCursor(0, 2); lcd.print("  only! (Player 1)  ");
+        break;
+      default:
+        lcd.setCursor(0, 1); lcd.print("  Don't touch       ");
+        lcd.setCursor(0, 2); lcd.print("  placed pieces!    ");
+        break;
+    }
+    lcd.setCursor(0, 3); lcd.print("Press START to retry");
+    LCD_UNLOCK();
+    return false;
   }
 
   // Comprobamos si ya hay un ganador en el tablero recibido.
@@ -335,7 +395,7 @@ void procesarEntradaTablero(const String &entrada)
     // Sin esto, si la tarea está en dibujarDecoracionTurnoAuto() puede tardar
     // hasta ~3 ms en soltar el mutex; con esto ya no compite por él.
     juegoEnCurso = false;
-    Serial.printf("[GAME] Ganador detectado en la entrada: %d\n", ganadorDetectado);
+    Serial.printf("[GAME] Winner detected in input: %d\n", ganadorDetectado);
     printBoardSerial();
     actualizarLCD();
     tableroPendiente = false;
@@ -343,7 +403,7 @@ void procesarEntradaTablero(const String &entrada)
     {
       sendMatrixToRaspberry();
     }
-    return;
+    return true;
   }
 
   // Pintamos primero el estado reconocido por visión para que la pantalla
@@ -374,7 +434,7 @@ void procesarEntradaTablero(const String &entrada)
     }
     else
     {
-      Serial.println("[ROBOT] No se pudo ejecutar el movimiento indicado por la IA");
+      Serial.println("[ROBOT] Could not execute AI move");
     }
   }
 
@@ -383,26 +443,27 @@ void procesarEntradaTablero(const String &entrada)
   robotServiceApplyBoardDelta(tableroSnapshot, tablero);
 
   sendMatrixToRaspberry();
+  return true;
 }
 
 void handleTablero()
 {
   if (!server.hasArg("plain"))
   {
-    server.send(400, "text/plain", "Body vacio");
-    Serial.println("[RX] Peticion sin body");
+    server.send(400, "text/plain", "Empty body");
+    Serial.println("[RX] Request without body");
     return;
   }
 
   if (!juegoEnCurso || !modoAutomatico)
   {
-    server.send(202, "text/plain", "Ignorado: no esta en partida automatica");
+    server.send(202, "text/plain", "Ignored: not in automatic game");
     return;
   }
 
   if (!turnoMaquina)
   {
-    server.send(202, "text/plain", "Ignorado: turno jugador");
+    server.send(202, "text/plain", "Ignored: player's turn");
     return;
   }
 
@@ -410,16 +471,16 @@ void handleTablero()
   tableroPendiente = true;
 
   Serial.println("\n=============================");
-  Serial.println("TABLERO RECIBIDO DESDE ESP32-CAM:");
+  Serial.println("BOARD RECEIVED FROM ESP32-CAM:");
   Serial.println(tableroRecibidoHttp);
   Serial.println("=============================\n");
 
-  server.send(200, "text/plain", "OK - tablero recibido");
+  server.send(200, "text/plain", "OK - board received");
 }
 
 void handleRoot()
 {
-  server.send(200, "text/plain", "ESP32-S3 fusion listo. Usa POST /tablero o GET /pedir-foto");
+  server.send(200, "text/plain", "ESP32-S3 ready. Use POST /tablero or GET /pedir-foto");
 }
 
 bool solicitarVerificacion()
@@ -428,13 +489,13 @@ bool solicitarVerificacion()
   url.replace("/capturar", "/verificar");
 
   HTTPClient http;
-  Serial.print("Solicitando verificacion a ESP32-CAM: ");
+  Serial.print("Requesting verification to ESP32-CAM: ");
   Serial.println(url);
 
   http.setTimeout(3000);
   if (!http.begin(url))
   {
-    Serial.println("Error: no se pudo iniciar conexion con ESP32-CAM para verificar");
+    Serial.println("Error: could not connect to ESP32-CAM for verification");
     return false;
   }
 
@@ -443,13 +504,13 @@ bool solicitarVerificacion()
 
   if (httpCode <= 0)
   {
-    Serial.printf("Error HTTP verificacion ESP32-CAM: %s\n", http.errorToString(httpCode).c_str());
+    Serial.printf("HTTP error ESP32-CAM verification: %s\n", http.errorToString(httpCode).c_str());
     http.end();
     return false;
   }
 
   http.end();
-  Serial.println("Solicitud de verificacion enviada a ESP32-CAM");
+  Serial.println("Verification request sent to ESP32-CAM");
   return true;
 }
 
@@ -457,12 +518,12 @@ void handleVerificarResultado()
 {
   if (!server.hasArg("plain"))
   {
-    server.send(400, "text/plain", "Body vacio");
+    server.send(400, "text/plain", "Empty body");
     return;
   }
 
   String body = server.arg("plain");
-  Serial.println("[VERIFICAR] Resultado recibido:");
+  Serial.println("[VERIFY] Result received:");
   Serial.println(body);
 
   bool listo  = false;
@@ -491,7 +552,7 @@ void handleVerificarResultado()
   verificarManoEnTablero = mano;
   verificarResultadoPendiente = false;
 
-  Serial.printf("[VERIFICAR] listo=%d  tablero_limpio=%d  mano=%d\n", listo, limpio, mano);
+  Serial.printf("[VERIFY] ready=%d  clean_board=%d  hand=%d\n", listo, limpio, mano);
   server.send(200, "text/plain", "OK");
 }
 

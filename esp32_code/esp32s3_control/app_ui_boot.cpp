@@ -121,8 +121,8 @@ void mostrarBienvenida()
     delay(50); 
   }
 
-  Serial.println("\nWiFi conectado");
-  Serial.print("IP del ESP32-S3: ");
+  Serial.println("\nWiFi connected");
+  Serial.print("ESP32-S3 IP: ");
   Serial.println(WiFi.localIP());
 
   transicionBarrido();

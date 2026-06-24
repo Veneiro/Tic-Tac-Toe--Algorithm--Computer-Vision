@@ -353,17 +353,17 @@ void setZeroAllEncoders(void)
 {
     Serial.println("===== SET ZERO ENCODERS =====");
 
-    Serial.println("Poniendo en cero encoder 1...");
+    Serial.println("Zeroing encoder 1...");
     bool ok1 = setZeroAMT203(PIN_CS1);
 
     delay(100);
 
-    Serial.println("Poniendo en cero encoder 2...");
+    Serial.println("Zeroing encoder 2...");
     bool ok2 = setZeroAMT203(PIN_CS2);
 
     delay(100);
 
-    Serial.println("Poniendo en cero encoder 3...");
+    Serial.println("Zeroing encoder 3...");
     bool ok3 = setZeroAMT203(PIN_CS3);
 
     Serial.print("Zero E1: ");
@@ -378,8 +378,8 @@ void setZeroAllEncoders(void)
     resetEncoderSoftwareState();
 
     Serial.println("IMPORTANTE:");
-    Serial.println("Si dice OK, el cero fue guardado en EEPROM.");
-    Serial.println("Apaga y enciende la alimentacion de los encoders para aplicar el nuevo cero.");
+    Serial.println("If OK, zero was saved to EEPROM.");
+    Serial.println("Power cycle encoders to apply the new zero.");
     Serial.println("=============================");
 }
 
@@ -632,13 +632,13 @@ bool setZeroAMT203(uint8_t cs_pin)
 
 void setZeroAllEncoders(void)
 {
-    Serial.println("Poniendo en cero encoder 1...");
+    Serial.println("Zeroing encoder 1...");
     bool ok1 = setZeroAMT203(PIN_CS1);
 
-    Serial.println("Poniendo en cero encoder 2...");
+    Serial.println("Zeroing encoder 2...");
     bool ok2 = setZeroAMT203(PIN_CS2);
 
-    Serial.println("Poniendo en cero encoder 3...");
+    Serial.println("Zeroing encoder 3...");
     bool ok3 = setZeroAMT203(PIN_CS3);
 
     Serial.print("Zero E1: ");
@@ -650,6 +650,6 @@ void setZeroAllEncoders(void)
     Serial.print("Zero E3: ");
     Serial.println(ok3 ? "OK" : "ERROR");
 
-    Serial.println("IMPORTANTE: Apaga y enciende la alimentacion de los encoders para aplicar el nuevo cero.");
+    Serial.println("IMPORTANT: Power cycle encoders to apply the new zero.");
 }
 */

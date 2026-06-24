@@ -336,6 +336,36 @@ static const double _bb_ritmo2[] = {
   0.250,0.375,0.125,0.250,0.250,0.250,0.250,0.250,0.1979,1.0521
 };
 
+// ── Super Mario Kart - Race Fanfare  (BPM 122) ───────────────────
+static const double _rf_notas1[] = {
+  S, C, S, C, C, C, D, E, S
+};
+static const double _rf_ritmo1[] = {
+  1.500000, 0.100000, 0.150000, 0.500000, 0.500000, 0.250000, 0.500000, 0.458300, 0.499900
+};
+
+static const double _rf_notas2[] = {
+  A, C2, F2, AA2, F2, G2, S, G2, G2, G2, AA2, B2
+};
+static const double _rf_ritmo2[] = {
+  0.250000, 0.250000, 0.333300, 0.333300, 0.333300, 0.100000, 0.150000, 0.500000, 0.500000, 0.250000, 0.500000, 0.958300
+};
+
+// ── Super Mario Bros. 3 - Game Over  (BPM 100) ───────────────────
+static const double _dw_notas1[] = {
+  A, S, D, D, D, Fs, G, S, Cs, D, G0
+};
+static const double _dw_ritmo1[] = {
+  0.218800, 0.781200, 0.666700, 0.333300, 0.333300, 0.333300, 0.218800, 0.781200, 0.333300, 0.333300, 0.218800
+};
+
+static const double _dw_notas2[] = {
+  E3, E3, E3, B3, AA3, Fs3, D3, G3, Cs2, D2, G, S
+};
+static const double _dw_ritmo2[] = {
+  0.333300, 0.333300, 0.333300, 0.666700, 0.333300, 0.333300, 0.333300, 1.000000, 0.333300, 0.333300, 0.166700, 0.052200
+};
+
 // ── Tabla de canciones ────────────────────────────────────────────
 struct CancionData {
     const double* notas1; int len1;
@@ -373,6 +403,20 @@ static const CancionData _tabla[NUM_CANCIONES] = {
         _bb_notas2, (int)_COUNT(_bb_notas2),
         _bb_ritmo1, _bb_ritmo2,
         90
+    },
+    // CANCION_RACE_FANFARE
+    {
+        _rf_notas1, (int)_COUNT(_rf_notas1),
+        _rf_notas2, (int)_COUNT(_rf_notas2),
+        _rf_ritmo1, _rf_ritmo2,
+        122
+    },
+    // CANCION_DRAW
+    {
+        _dw_notas1, (int)_COUNT(_dw_notas1),
+        _dw_notas2, (int)_COUNT(_dw_notas2),
+        _dw_ritmo1, _dw_ritmo2,
+        100
     }
 };
 

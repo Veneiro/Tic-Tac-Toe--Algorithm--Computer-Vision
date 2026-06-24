@@ -12,28 +12,27 @@ static void _lcdVerificacionMensaje()
 
   if (verificarManoEnTablero && !verificarTableroLimpio)
   {
-    lcd.setCursor(0, 1); lcd.print("  RETIRE LA MANO    ");
-    lcd.setCursor(0, 2); lcd.print("  y limpie el       ");
-    lcd.setCursor(0, 3); lcd.print("  TABLERO           ");
+    lcd.setCursor(0, 1); lcd.print("  REMOVE YOUR HAND  ");
+    lcd.setCursor(0, 2); lcd.print("  and clean the     ");
+    lcd.setCursor(0, 3); lcd.print("  BOARD             ");
   }
   else if (verificarManoEnTablero)
   {
-    lcd.setCursor(0, 1); lcd.print("  RETIRE LA MANO    ");
-    lcd.setCursor(0, 2); lcd.print("  antes de empezar  ");
+    lcd.setCursor(0, 1); lcd.print("  REMOVE YOUR HAND  ");
+    lcd.setCursor(0, 2); lcd.print("  before starting   ");
     lcd.setCursor(0, 3); lcd.print("                    ");
   }
   else if (!verificarTableroLimpio)
   {
-    lcd.setCursor(0, 1); lcd.print("  LIMPIE EL         ");
-    lcd.setCursor(0, 2); lcd.print("  TABLERO antes     ");
-    lcd.setCursor(0, 3); lcd.print("  de comenzar       ");
+    lcd.setCursor(0, 1); lcd.print("  CLEAN THE BOARD   ");
+    lcd.setCursor(0, 2); lcd.print("  before starting   ");
+    lcd.setCursor(0, 3); lcd.print("                    ");
   }
   else
   {
-    // Aún no hemos recibido ningún resultado: mensaje genérico de espera
-    lcd.setCursor(0, 1); lcd.print("  Comprobando...    ");
+    lcd.setCursor(0, 1); lcd.print("  Checking...       ");
     lcd.setCursor(0, 2); lcd.print("                    ");
-    lcd.setCursor(0, 3); lcd.print("  Por favor espere  ");
+    lcd.setCursor(0, 3); lcd.print("  Please wait...    ");
   }
   LCD_UNLOCK();
 }
@@ -52,9 +51,9 @@ void esperarTableroLimpio()
   LCD_LOCK();
   lcd.clear();
   lcd.setCursor(0, 0); lcd.print("== BOARD  CHECK  ===");
-  lcd.setCursor(0, 1); lcd.print("  Comprobando...    ");
+  lcd.setCursor(0, 1); lcd.print("  Checking...       ");
   lcd.setCursor(0, 2); lcd.print("                    ");
-  lcd.setCursor(0, 3); lcd.print("  Por favor espere  ");
+  lcd.setCursor(0, 3); lcd.print("  Please wait...    ");
   LCD_UNLOCK();
 
   bool esperandoRespuesta = false;
@@ -80,7 +79,7 @@ void esperarTableroLimpio()
     // Timeout de espera
     if (esperandoRespuesta && millis() - tiempoEnvio > TIMEOUT_MS)
     {
-      Serial.println("[VERIFICAR] Timeout esperando respuesta de camara, reintentando...");
+      Serial.println("[VERIFY] Timeout waiting for camera response, retrying...");
       esperandoRespuesta = false;
       verificarResultadoPendiente = false;
     }
@@ -88,6 +87,9 @@ void esperarTableroLimpio()
     // Enviar nueva solicitud de verificación
     if (!esperandoRespuesta)
     {
+      // El resultado puede haber llegado durante la pausa de error o el timeout
+      if (verificarListo) break;
+
       verificarResultadoPendiente = true;
       verificarListo              = false;
       tiempoEnvio                 = millis();
@@ -100,7 +102,7 @@ void esperarTableroLimpio()
       {
         // Error de red: breve pausa y reintento
         verificarResultadoPendiente = false;
-        Serial.println("[VERIFICAR] Error de red, reintentando en 2s...");
+        Serial.println("[VERIFY] Network error, retrying in 2s...");
         unsigned long espera = millis() + 2000;
         while (millis() < espera) { server.handleClient(); delay(20); }
       }
@@ -112,8 +114,8 @@ void esperarTableroLimpio()
   // Confirmar en pantalla antes de continuar con el flujo normal
   LCD_LOCK();
   lcd.clear();
-  lcd.setCursor(0, 1); lcd.print("  Tablero listo!    ");
-  lcd.setCursor(0, 2); lcd.print("  Iniciando partida ");
+  lcd.setCursor(0, 1); lcd.print("  Board is ready!   ");
+  lcd.setCursor(0, 2); lcd.print("  Starting game...  ");
   LCD_UNLOCK();
   delay(1000);
 }
@@ -149,6 +151,7 @@ void ejecutarPartida1()
     bool ultimoEstadoStartAuto = digitalRead(pinStart);
     bool turnoRobotPendiente = turnoMaquina;
     bool capturaEnviada = false;
+    bool esperandoCorreccion = false;
     int intentosCaptura = 0;
     unsigned long ultimoIntentoCaptura = 0;
     const unsigned long retardoReintentoCapturaMs = 1500;
@@ -157,6 +160,24 @@ void ejecutarPartida1()
     while (ganador == 0 && !abortarPartida)
     {
       server.handleClient();
+
+      // Comprobación de fallo de encoders (detección runtime)
+      if (!encoder_inicia_bien)
+      {
+        juegoEnCurso = false;
+        buzzerStop();
+        LCD_LOCK();
+        lcd.clear();
+        lcd.setCursor(0, 0); lcd.print("== ENCODER ERROR! ==");
+        lcd.setCursor(0, 1); lcd.print("  Joint out of range");
+        lcd.setCursor(0, 2); lcd.print(" Returning to menu  ");
+        lcd.setCursor(0, 3); lcd.print("  Please reboot!    ");
+        LCD_UNLOCK();
+        Serial.println("[ERROR] Encoder failure detected in auto mode — aborting");
+        delay(3000);
+        abortarPartida = true;
+        break;
+      }
 
       // Arrancar boss battle desde el loop principal (no desde la tarea LCD)
       // para evitar llamar buzzerPlay() mientras se sostiene lcdMutex.
@@ -173,21 +194,28 @@ void ejecutarPartida1()
         }
       }
 
-      if (tableroPendiente && !abortarPartida)
+      if (tableroPendiente && !abortarPartida && !esperandoCorreccion)
       {
         String tableroLocal = tableroRecibidoHttp;
         tableroPendiente = false;
 
-        procesarEntradaTablero(tableroLocal);
-        ganador = comprobarGanador();
-
-        if (ganador == 0)
+        if (!procesarEntradaTablero(tableroLocal))
         {
-          turnoMaquina = false;
-          turnoRobotPendiente = false;
-          capturaEnviada = false;
-          setSemaforo(false, false, true);
-          Serial.println("[TURN] Turno jugador: pulsa START para continuar");
+          capturaEnviada = true;        // block auto-capture until player presses START
+          esperandoCorreccion = true;   // juegoEnCurso=false already set inside procesarEntradaTablero
+          Serial.println("[VALID] Invalid move — waiting for player to correct and press START");
+        }
+        else
+        {
+          ganador = comprobarGanador();
+          if (ganador == 0)
+          {
+            turnoMaquina = false;
+            turnoRobotPendiente = false;
+            capturaEnviada = false;
+            setSemaforo(false, false, true);
+            Serial.println("[TURN] Player's turn: press START to continue");
+          }
         }
       }
 
@@ -205,7 +233,7 @@ void ejecutarPartida1()
           }
           else
           {
-            Serial.println("[CAM] Fallo al solicitar captura");
+            Serial.println("[CAM] Failed to request capture");
           }
         }
       }
@@ -256,16 +284,27 @@ void ejecutarPartida1()
       }
       ultimoEstadoMenu = lecturaMenu;
 
-      if (!turnoMaquina && !abortarPartida && ganador == 0)
+      if ((!turnoMaquina || esperandoCorreccion) && !abortarPartida && ganador == 0)
       {
         bool estadoStartAuto = digitalRead(pinStart);
         if (estadoStartAuto == HIGH && ultimoEstadoStartAuto == LOW)
         {
           esperarLiberacionBoton(pinStart);
-          turnoMaquina = true;
-          turnoRobotPendiente = true;
-          setSemaforo(true, false, false);
-          Serial.println("[TURN] Turno maquina: esperando captura de la camara");
+          if (esperandoCorreccion)
+          {
+            capturaEnviada = false;
+            esperandoCorreccion = false;
+            juegoEnCurso = true;
+            actualizarLCD();
+            Serial.println("[VALID] Player corrected move: requesting new capture");
+          }
+          else
+          {
+            turnoMaquina = true;
+            turnoRobotPendiente = true;
+            setSemaforo(true, false, false);
+            Serial.println("[TURN] Robot's turn: waiting for camera capture");
+          }
         }
         ultimoEstadoStartAuto = estadoStartAuto;
       }
@@ -289,6 +328,8 @@ void ejecutarPartida1()
     // MODO MANUAL (Con cambio a eje Z)
     // ======================================================
     setSemaforo(false, true, false);
+    goHome();  // Reset target_position/ok/target_angle a estado limpio
+    buzzerPlay(CANCION_MARIO_KART, true);
 
     lcd.clear();
     lcd.setCursor(2, 0);
@@ -308,7 +349,22 @@ void ejecutarPartida1()
 
     while (!abortarPartida)
     {
-      server.handleClient(); 
+      server.handleClient();
+
+      // --- 0. Comprobación de fallo de encoders ---
+      if (!encoder_inicia_bien)
+      {
+        buzzerStop();
+        lcd.clear();
+        lcd.setCursor(0, 0); lcd.print("== ENCODER ERROR! ==");
+        lcd.setCursor(0, 1); lcd.print("  Joint out of range");
+        lcd.setCursor(0, 2); lcd.print(" Returning to menu  ");
+        lcd.setCursor(0, 3); lcd.print("  Please reboot!    ");
+        Serial.println("[ERROR] Encoder failure detected in manual mode — aborting");
+        delay(3000);
+        abortarPartida = true;
+        break;
+      }
 
       // --- 1. Detección de pausa ---
       bool lecturaMenu = digitalRead(pinMenu);
@@ -320,6 +376,7 @@ void ejecutarPartida1()
         // --- LÓGICA DE SALIDA DRAMÁTICA (MANUAL) CORREGIDA ---
         if (abortarPartida)
         {
+          buzzerStop();
           lcd.clear();
           // Centramos el título (22 caracteres -> usamos 20: "! SISTEMA INESTABLE !")
           lcd.setCursor(3, 0); lcd.print("UNSTABLE SYSTEM!");
@@ -353,6 +410,7 @@ void ejecutarPartida1()
           lcd.setCursor(1, 3); lcd.print("LEAVING MANUAL MODE");
           
           resetPosition();
+          openGripperAndRelease();
 
           delay(1500);
           break; // Salir del while del manual
@@ -365,7 +423,9 @@ void ejecutarPartida1()
           lcd.print("--- MANUAL MODE ---");
           lcd.setCursor(0, 3);
           lcd.print(" [MENU] for pause ");
-          forzarDibujado = true; // Forzar repintado tras volver de la pausa
+          controlandoZ  = false;
+          forzarDibujado = true;
+          buzzerPlay(CANCION_MARIO_KART, true);
         }
       }
       ultimoEstadoMenu = lecturaMenu;
@@ -390,13 +450,19 @@ void ejecutarPartida1()
       lastStartState = startState;
 
       // --- 2. Detección del botón del Joystick (Cambio de Modo) ---
+      // Cooldown: ignora pulsaciones más rápidas de 400 ms para evitar
+      // toggles múltiples que corrompan target_position o bloqueen el robot.
+      static unsigned long _ultimoCambioEje = 0;
+      static bool          _ejeSwitched     = false;
       bool actBotonJoy = digitalRead(pinJoyButton);
-      // Detectamos si lo acabas de pulsar (Flanco de bajada)
-      if (actBotonJoy == LOW && antBotonJoy == HIGH) 
+      if (actBotonJoy == LOW && antBotonJoy == HIGH &&
+          millis() - _ultimoCambioEje >= 400)
       {
-        controlandoZ = !controlandoZ; // Alternar entre XY y Z
-        forzarDibujado = true;        // Limpiar la línea de valores en la LCD
-        delay(50);                    // Anti-rebote mecánico
+        controlandoZ      = !controlandoZ;
+        _ultimoCambioEje  = millis();
+        _ejeSwitched      = true;   // salta velocidad este frame para no salir del workspace
+        forzarDibujado    = true;
+        delay(50);
       }
       antBotonJoy = actBotonJoy;
 
@@ -408,29 +474,55 @@ void ejecutarPartida1()
       float vz = joystick.getVz(V_max);
 
       interrupt_flag = false;
-      while (interrupt_flag == false)
-      {
-      }
+      { unsigned long _t0 = millis(); while (!interrupt_flag && millis() - _t0 < 200) {} }
 
-      // Mostramos la posición real del efector en la LCD
+      // Posición fresca del efector (leída justo tras el control task)
       float posX = my_robot.p.x;
       float posY = my_robot.p.y;
       float posZ = my_robot.p.z;
 
-      // --- 4. Actualizar LCD según el modo ---
+      // --- Movimiento del brazo (ANTES de LCD para garantizar que el
+      //     control task no preempta a mitad de una transacción I2C) ---
+      LinearPosition candidate = target_position;
+      if (_ejeSwitched)
+      {
+        _ejeSwitched = false;
+      }
+      else if (!controlandoZ)
+      {
+        candidate.x += vx * Ts;
+        candidate.y += vy * Ts;
+      }
+      else
+      {
+        candidate.z += vz * Ts;
+      }
+
+      if (isInside(workspace, candidate))
+      {
+        IKResult my_solution = inverseKinematics(candidate);
+        if (my_solution.hasSolution)
+        {
+          target_position = candidate;
+          target_angle    = my_solution.q;
+          ok              = true;
+        }
+      }
+
+      // --- 4. Actualizar LCD (siempre DESPUÉS del movimiento y ANTES de
+      //        delay para que el control task dispare durante el delay,
+      //        nunca a mitad de una escritura I2C a la LCD) ---
       if (!controlandoZ)
       {
         // === MODO X / Y ===
         int valorX = (int)(posX * 10.0f);
         int valorY = (int)(posY * 10.0f);
 
-        // Aumentamos el umbral para evitar que el redondeo haga parpadear la LCD
         if (forzarDibujado || abs(valorX - ultimoX) > 1 || abs(valorY - ultimoY) > 1) {
             char bufferXY[21];
-            snprintf(bufferXY, sizeof(bufferXY), " X:%5.1f Y:%5.1f ", posX, posY); 
+            snprintf(bufferXY, sizeof(bufferXY), " X:%5.1f Y:%5.1f ", posX, posY);
             lcd.setCursor(0, 1);
             lcd.print(bufferXY);
-            
             ultimoX = valorX;
             ultimoY = valorY;
             forzarDibujado = false;
@@ -444,10 +536,9 @@ void ejecutarPartida1()
         int valorZ = (int)(posZ * 10.0f);
         if (forzarDibujado || abs(valorZ - ultimoZ) > 1) {
             char bufferZ[21];
-            snprintf(bufferZ, sizeof(bufferZ), " Z:%5.1f           ", posZ); 
+            snprintf(bufferZ, sizeof(bufferZ), " Z:%5.1f           ", posZ);
             lcd.setCursor(0, 1);
             lcd.print(bufferZ);
-            
             ultimoZ = valorZ;
             forzarDibujado = false;
         }
@@ -455,31 +546,15 @@ void ejecutarPartida1()
         lcd.print(" Pos:  [   Z   ]    ");
       }
 
-        // --- Movimiento del brazo usando velocidades del joystick ---
-        LinearPosition candidate = target_position;
-        candidate.x += vx * Ts;
-        candidate.y += vy * Ts;
-        candidate.z += vz * Ts;
-
-        if (isInside(workspace, candidate))
-        {
-          IKResult my_solution = inverseKinematics(candidate);
-          if (my_solution.hasSolution)
-          {
-            target_position = candidate;
-            target_angle = my_solution.q;
-            ok = true;
-          }
-        }
-
-        delay(20); 
+      delay(20);
     }
 
-    juegoEnCurso = false; 
-  setSemaforo(false, false, false);
+    juegoEnCurso = false;
+    buzzerStop();
+    setSemaforo(false, false, false);
 
     if (abortarPartida) {
-      return; 
+      return;
     }
   }
 }
