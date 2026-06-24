@@ -10,11 +10,13 @@
 // ==========================================
 // CONFIGURACIÓN DE RED
 // ==========================================
-const char *ssid     = "Galaxy S23 E57C";
-const char *password = "2ppyahxwjx4g7zu";
+const char *ssid = "MIM-DPM-GRUPO-3";
+const char *password = "mim-dpm-2026";
+//const char *ssid     = "Galaxy S23 E57C";
+//const char *password = "2ppyahxwjx4g7zu";
 
-String raspberryURL = "http://10.191.81.8:5000/procesar";
-String esp32s3URL   = "http://10.191.81.221/tablero";
+String raspberryURL = "http://192.168.100.120:5000/procesar";
+String esp32s3URL   = "http://192.168.100.123/tablero";
 
 // ==========================================
 // AJUSTES DE FIABILIDAD / VELOCIDAD
